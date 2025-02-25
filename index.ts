@@ -47,12 +47,6 @@ function getLogger(useLogger: boolean = true, useAbacate: boolean = true, useDat
             description: 'Usar o tempo no prefixo do logger.',
             default: true
         })
-        .option('logger', {
-            alias: 'l',
-            type: 'boolean',
-            description: 'Usar o logger',
-            default: true
-        })
         .help()
         .argv;
 
