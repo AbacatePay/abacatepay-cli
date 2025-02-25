@@ -1,3 +1,6 @@
+const { createRequire } = require('node:module');
+require = createRequire(__filename); 
+
 const yargs = require('yargs');
 const localtunnel = require('localtunnel');
 const express = require('express');
@@ -25,7 +28,6 @@ function getLogger(useLogger: boolean = true, useAbacate: boolean = true, useDat
             alias: 't',
             type: 'string',
             description: 'URL do servidor local para encaminhamento.',
-            requiresArg: true
         })
         .option('logger', {
             alias: 'l',
@@ -58,6 +60,10 @@ function getLogger(useLogger: boolean = true, useAbacate: boolean = true, useDat
     
     const PORT = 8954;
     const LOCAL_SERVER = argv.target;
+    if(!LOCAL_SERVER || LOCAL_SERVER == undefined) {
+        console.log('URL do servidor local não informado. Digite abacate --help para ver a lista de opções.');
+        process.exit(1);
+    }
     const USE_LOGGER = argv.logger;
     const USE_LOG_PREFIX = argv.log_prefix;
     const USE_LOG_TIME = argv.log_time;
