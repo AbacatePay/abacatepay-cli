@@ -20,7 +20,7 @@ const (
 	configFileName   = ".abacatepay.json"
 	pollInterval     = 2 * time.Second
 	maxRetries       = 30
-	websocketBaseURL = "wss://ws.abacatepay.com"
+	websocketBaseURL = "wss://ws.abacatepay.com/ws"
 )
 
 // Config structure
