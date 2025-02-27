@@ -127,6 +127,15 @@ func Login() {
 	fmt.Println("✅ Logged in successfully.")
 }
 
+// Logout removes the stored authentication token
+func Logout() error {
+	config := &Config{Token: ""}
+	if err := WriteConfig(config); err != nil {
+		return fmt.Errorf("failed to clear login token: %v", err)
+	}
+	return nil
+}
+
 // Listen connects to WebSocket and forwards webhooks
 func Listen(forwardURL string, token string) {
 	fmt.Println("🌐 Starting webhook listener...")
@@ -163,11 +172,23 @@ func main() {
 	var forwardURL string
 
 	rootCmd := &cobra.Command{Use: "abacatepay-cli"}
+
 	loginCmd := &cobra.Command{
 		Use:   "login",
 		Short: "Log in to AbacatePay",
 		Run: func(cmd *cobra.Command, args []string) {
 			Login()
+		},
+	}
+
+	logoutCmd := &cobra.Command{
+		Use:   "logout",
+		Short: "Log out from AbacatePay",
+		Run: func(cmd *cobra.Command, args []string) {
+			if err := Logout(); err != nil {
+				log.Fatalf("❌ %v", err)
+			}
+			fmt.Println("✅ Logged out successfully")
 		},
 	}
 
@@ -190,7 +211,7 @@ func main() {
 	listenCmd.Flags().StringVarP(&forwardURL, "forward", "f", "", "Local server URL to forward webhooks")
 	listenCmd.MarkFlagRequired("forward")
 
-	rootCmd.AddCommand(loginCmd, listenCmd)
+	rootCmd.AddCommand(loginCmd, logoutCmd, listenCmd)
 	if err := rootCmd.Execute(); err != nil {
 		fmt.Println(err)
 		os.Exit(1)
