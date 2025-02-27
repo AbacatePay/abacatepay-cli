@@ -4,10 +4,10 @@ import (
 	"bytes"
 	"encoding/json"
 	"fmt"
+	"io"
 	"log"
 	"net/http"
 	"os"
-	"os/user"
 	"path/filepath"
 	"time"
 
@@ -65,11 +65,12 @@ func WriteConfig(config *Config) error {
 
 // getConfigPath returns the path to the config file
 func getConfigPath() (string, error) {
-	usr, err := user.Current()
+	homeDir, err := os.UserHomeDir()
 	if err != nil {
 		return "", err
 	}
-	return filepath.Join(usr.HomeDir, configFileName), nil
+
+	return filepath.Join(homeDir, configFileName), nil
 }
 
 // PollForToken polls the API until the token is received
