@@ -102,8 +102,19 @@ func Login() {
 
 	body, _ := json.Marshal(map[string]string{"host": host})
 	resp, err := http.Post(apiBaseURL+"/device-login", "application/json", bytes.NewBuffer(body))
+
 	if err != nil {
 		log.Fatalf("❌ Login failed: %v", err)
+	}
+
+	// Status other than 2xx does not cause errors
+	if resp.StatusCode != http.StatusOK {
+		body, err := io.ReadAll(resp.Body)
+		if err != nil {
+			log.Fatalf("❌ Login failed, Status: %v, but could not read response body: %v", resp.StatusCode, err)
+		}
+
+		log.Fatalf("❌ Login failed, Status: %v, message: %s", resp.StatusCode, string(body))
 	}
 	defer resp.Body.Close()
 
