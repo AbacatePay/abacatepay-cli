@@ -1,0 +1,7 @@
+token = "seu_token_aqui"
+live_mode = false
+
+[endpoints]
+api = "https://api.abacatepay.com"
+websocket = "wss://ws.abacatepay.com/ws"
+forward_url = "http://localhost:8080/webhook"   
