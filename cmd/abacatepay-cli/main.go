@@ -37,7 +37,7 @@ func ReadConfig() (*Config, error) {
 
 	data, err := os.ReadFile(configPath)
 	if err != nil {
-		return &Config{}, nil // Return an empty config if file doesn't exist
+		return &Config{}, nil
 	}
 
 	var config Config
