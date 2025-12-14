@@ -128,3 +128,11 @@ dist
 .yarn/build-state.yml
 .yarn/install-state.gz
 .pnp.*
+
+# Go binaries
+abacatepay-cli
+*.exe
+*.exe~
+*.dll
+*.so
+*.dylib
