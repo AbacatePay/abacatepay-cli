@@ -22,10 +22,9 @@ func init() {
 }
 
 func getAuthStatus() error {
-	cfg := utils.GetConfig(Local)
-	store := utils.GetStore(cfg)
+	deps := utils.SetupDependencies(Local)
 
-	token, err := store.Get()
+	token, err := deps.Store.Get()
 	if err != nil {
 		return err
 	}

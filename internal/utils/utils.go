@@ -9,6 +9,7 @@ import (
 	"strings"
 
 	"abacatepay-cli/internal/auth"
+	"abacatepay-cli/internal/client"
 	"abacatepay-cli/internal/config"
 	"abacatepay-cli/internal/logger"
 	"abacatepay-cli/internal/webhook"
@@ -22,6 +23,12 @@ type StartListenerParams struct {
 	Client     *resty.Client
 	Store      auth.TokenStore
 	ForwardURL string
+}
+
+type Dependencies struct {
+	Config *config.Config
+	Client *resty.Client
+	Store  auth.TokenStore
 }
 
 func StartListener(params *StartListenerParams) error {
@@ -78,5 +85,14 @@ func PromptForURL(defaultURL string) string {
 	return input
 }
 
-func Salve() {
+func SetupDependencies(local bool) *Dependencies {
+	cfg := GetConfig(local)
+	cli := client.New(cfg)
+	store := GetStore(cfg)
+
+	return &Dependencies{
+		Config: cfg,
+		Client: cli,
+		Store:  store,
+	}
 }

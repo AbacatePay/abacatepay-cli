@@ -20,7 +20,6 @@ func init() {
 }
 
 func logout() error {
-	cfg := utils.GetConfig(Local)
-	store := utils.GetStore(cfg)
-	return auth.Logout(store)
+	deps := utils.SetupDependencies(Local)
+	return auth.Logout(deps.Store)
 }

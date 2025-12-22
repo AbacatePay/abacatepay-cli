@@ -23,18 +23,25 @@ type TokenResponse struct {
 	Token string `json:"token"`
 }
 
-func Login(ctx context.Context, cfg *config.Config, client *resty.Client, store TokenStore) error {
+type LoginParams struct {
+	Config  *config.Config
+	Client  *resty.Client
+	Store   TokenStore
+	Context context.Context
+}
+
+func Login(params *LoginParams) error {
 	host, err := os.Hostname()
 	if err != nil {
 		host = "unknown"
 	}
 
 	var result DeviceLoginResponse
-	resp, err := client.R().
-		SetContext(ctx).
+	resp, err := params.Client.R().
+		SetContext(params.Context).
 		SetBody(map[string]string{"host": host}).
 		SetResult(&result).
-		Post(cfg.APIBaseURL + "/device-login")
+		Post(params.Config.APIBaseURL + "/device-login")
 
 	if err != nil {
 		return fmt.Errorf("falha na requisição de login: %w", err)
@@ -55,12 +62,12 @@ func Login(ctx context.Context, cfg *config.Config, client *resty.Client, store 
 	fmt.Println("Abra o seguinte link no navegador para autenticar:")
 	fmt.Printf("%s\n", result.VerificationURI)
 
-	token, err := pollForToken(ctx, cfg, client, result.DeviceCode)
+	token, err := pollForToken(params.Context, params.Config, params.Client, result.DeviceCode)
 	if err != nil {
 		return err
 	}
 
-	if err := store.Save(token); err != nil {
+	if err := params.Store.Save(token); err != nil {
 		return fmt.Errorf("falha ao salvar token: %w", err)
 	}
 
@@ -99,7 +106,6 @@ func pollForToken(ctx context.Context, cfg *config.Config, client *resty.Client,
 			SetBody(map[string]string{"deviceCode": deviceCode}).
 			SetResult(&result).
 			Post(cfg.APIBaseURL + "/token")
-
 		if err != nil {
 			slog.Debug("Falha na requisição de token", "error", err)
 			continue

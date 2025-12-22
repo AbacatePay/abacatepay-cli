@@ -7,7 +7,6 @@ import (
 	"syscall"
 
 	"abacatepay-cli/internal/auth"
-	"abacatepay-cli/internal/client"
 	"abacatepay-cli/internal/utils"
 
 	"github.com/spf13/cobra"
@@ -24,21 +23,26 @@ var loginCmd = &cobra.Command{
 var name, key string
 
 func init() {
-	loginCmd.Flags().StringVar(&key, "key", "", "Abacate Pay's API Key")
-	loginCmd.Flags().StringVar(&name, "name", "", "Name for the profile (Min 3, Max 50 chars.)")
+	// loginCmd.Flags().StringVar(&key, "key", "", "Abacate Pay's API Key")
+	// loginCmd.Flags().StringVar(&name, "name", "", "Name for the profile (Min 3, Max 50 chars.)")
 
 	rootCmd.AddCommand(loginCmd)
 }
 
 func login() error {
-	cfg := utils.GetConfig(Local)
-	cli := client.New(cfg)
-	store := utils.GetStore(cfg)
+	deps := utils.SetupDependencies(Local)
 
 	ctx, cancel := signal.NotifyContext(context.Background(), os.Interrupt, syscall.SIGTERM)
 	defer cancel()
 
-	if err := auth.Login(ctx, cfg, cli, store); err != nil {
+	params := &auth.LoginParams{
+		Config:  deps.Config,
+		Client:  deps.Client,
+		Store:   deps.Store,
+		Context: ctx,
+	}
+
+	if err := auth.Login(params); err != nil {
 		return err
 	}
 
