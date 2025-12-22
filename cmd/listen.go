@@ -9,6 +9,7 @@ import (
 
 	"abacatepay-cli/internal/client"
 	"abacatepay-cli/internal/logger"
+	"abacatepay-cli/internal/utils"
 	"abacatepay-cli/internal/webhook"
 
 	"github.com/spf13/cobra"
@@ -26,11 +27,13 @@ var forwardURL string
 
 func init() {
 	listenCmd.Flags().StringVar(&forwardURL, "forward-to", "http://localhost:3000", "salve")
+
+	rootCmd.AddCommand(listenCmd)
 }
 
 func listen() error {
-	cfg := getConfig()
-	store := getStore(cfg)
+	cfg := utils.GetConfig(Local)
+	store := utils.GetStore(cfg)
 
 	token, err := store.Get()
 	if err != nil {
@@ -42,7 +45,7 @@ func listen() error {
 	}
 
 	if forwardURL == "" {
-		forwardURL = promptForURL(cfg.DefaultForwardURL)
+		forwardURL = utils.PromptForURL(cfg.DefaultForwardURL)
 	}
 
 	logCfg, err := logger.DefaultConfig()

@@ -11,16 +11,14 @@ var rootCmd = &cobra.Command{
 	Short:   "AbacatePay CLI para executar webhooks localmente",
 	Version: "1.0.0",
 }
-
-func init() {
-}
+var Local, Verbose bool
 
 func Exec() {
-	rootCmd.PersistentFlags().BoolVarP(&verbose, "verbose", "v", false, "Habilitar logs detalhados")
-	rootCmd.PersistentFlags().BoolVarP(&local, "local", "l", false, "Usar servidor de teste")
+	rootCmd.PersistentFlags().BoolVarP(&Verbose, "verbose", "v", false, "Habilitar logs detalhados")
+	rootCmd.PersistentFlags().BoolVarP(&Local, "local", "l", false, "Usar servidor de teste")
 
 	rootCmd.PersistentPreRun = func(cmd *cobra.Command, args []string) {
-		if verbose {
+		if Verbose {
 			slog.SetLogLoggerLevel(slog.LevelDebug)
 		}
 	}

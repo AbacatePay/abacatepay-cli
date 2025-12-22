@@ -1,6 +1,17 @@
 package cmd
 
-import "github.com/spf13/cobra"
+import (
+	"context"
+	"os"
+	"os/signal"
+	"syscall"
+
+	"abacatepay-cli/internal/auth"
+	"abacatepay-cli/internal/client"
+	"abacatepay-cli/internal/utils"
+
+	"github.com/spf13/cobra"
+)
 
 var loginCmd = &cobra.Command{
 	Use:   "login",
@@ -15,32 +26,21 @@ var name, key string
 func init() {
 	loginCmd.Flags().StringVar(&key, "key", "", "Abacate Pay's API Key")
 	loginCmd.Flags().StringVar(&name, "name", "", "Name for the profile (Min 3, Max 50 chars.)")
+
+	rootCmd.AddCommand(loginCmd)
 }
 
 func login() error {
-			cfg := getConfig()
-			cli := client.New(cfg)
-			store := getStore(cfg)
+	cfg := utils.GetConfig(Local)
+	cli := client.New(cfg)
+	store := utils.GetStore(cfg)
 
-			ctx, cancel := signal.NotifyContext(context.Background(), os.Interrupt, syscall.SIGTERM)
-			defer cancel()
+	ctx, cancel := signal.NotifyContext(context.Background(), os.Interrupt, syscall.SIGTERM)
+	defer cancel()
 
-			if err := auth.Login(ctx, cfg, cli, store); err != nil {
-				return err
-			}
-
-			if skipListen {
-				return nil
-			}
-
-			if forwardURL == "" {
-				forwardURL = promptForURL(cfg.DefaultForwardURL)
-			}
-
-			return startListener(ctx, cfg, cli, store, forwardURL)
-		}
-
-	return cmd
+	if err := auth.Login(ctx, cfg, cli, store); err != nil {
+		return err
+	}
 
 	return nil
 }

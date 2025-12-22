@@ -4,6 +4,8 @@ import (
 	"fmt"
 	"log/slog"
 
+	"abacatepay-cli/internal/utils"
+
 	"github.com/spf13/cobra"
 )
 
@@ -15,9 +17,13 @@ var statusCmd = &cobra.Command{
 	},
 }
 
+func init() {
+	rootCmd.AddCommand(statusCmd)
+}
+
 func getAuthStatus() error {
-	cfg := getConfig()
-	store := getStore(cfg)
+	cfg := utils.GetConfig(Local)
+	store := utils.GetStore(cfg)
 
 	token, err := store.Get()
 	if err != nil {
