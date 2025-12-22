@@ -15,7 +15,7 @@ import (
 
 var loginCmd = &cobra.Command{
 	Use:   "login",
-	Short: "Autenticar com AbacatePay e iniciar listener",
+	Short: "Autenticar com AbacatePay",
 	RunE: func(cmd *cobra.Command, args []string) error {
 		return login()
 	},

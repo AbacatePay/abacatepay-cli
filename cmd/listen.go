@@ -8,9 +8,7 @@ import (
 	"syscall"
 
 	"abacatepay-cli/internal/client"
-	"abacatepay-cli/internal/logger"
 	"abacatepay-cli/internal/utils"
-	"abacatepay-cli/internal/webhook"
 
 	"github.com/spf13/cobra"
 )
@@ -26,7 +24,7 @@ var listenCmd = &cobra.Command{
 var forwardURL string
 
 func init() {
-	listenCmd.Flags().StringVar(&forwardURL, "forward-to", "http://localhost:3000", "salve")
+	listenCmd.Flags().StringVar(&forwardURL, "forward-to", "http://localhost:3000/webhooks/abacatepay", "salve")
 
 	rootCmd.AddCommand(listenCmd)
 }
@@ -48,24 +46,24 @@ func listen() error {
 		forwardURL = utils.PromptForURL(cfg.DefaultForwardURL)
 	}
 
-	logCfg, err := logger.DefaultConfig()
-	if err != nil {
-		return fmt.Errorf("erro ao configurar logger: %w", err)
-	}
-
-	txLogger, err := logger.NewTransactionLogger(logCfg)
-	if err != nil {
-		return fmt.Errorf("erro ao criar logger de transações: %w", err)
-	}
-
 	cli := client.New(cfg)
-	listener := webhook.NewListener(cfg, cli, forwardURL, token, txLogger)
 
 	ctx, cancel := signal.NotifyContext(context.Background(), os.Interrupt, syscall.SIGTERM)
 	defer cancel()
 
+	params := utils.StartListenerParams{
+		Context:    ctx,
+		Config:     cfg,
+		Client:     cli,
+		ForwardURL: forwardURL,
+		Store:      store,
+	}
+	if err := utils.StartListener(&params); err != nil {
+		return fmt.Errorf("error to start listener: %w", err)
+	}
+
 	fmt.Println("Pressione Ctrl+C para parar")
 	fmt.Println()
 
-	return listener.Listen(ctx)
+	return nil
 }

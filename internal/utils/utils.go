@@ -77,3 +77,6 @@ func PromptForURL(defaultURL string) string {
 
 	return input
 }
+
+func Salve() {
+}
