@@ -3,6 +3,7 @@ package config
 import "time"
 
 type Config struct {
+	Verbose           bool
 	APIBaseURL        string
 	WebSocketBaseURL  string
 	PollInterval      time.Duration
@@ -27,6 +28,7 @@ func Default() *Config {
 		RetryCount:        3,
 		RetryWaitTime:     1 * time.Second,
 		DefaultForwardURL: "http://localhost:3000/webhooks",
+		Verbose:           false,
 	}
 }
 
