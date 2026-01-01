@@ -85,8 +85,10 @@ func PromptForURL(defaultURL string) string {
 	return input
 }
 
-func SetupDependencies(local bool) *Dependencies {
+func SetupDependencies(local bool, verbose bool) *Dependencies {
 	cfg := GetConfig(local)
+	cfg.Verbose = verbose
+
 	cli := client.New(cfg)
 	store := GetStore(cfg)
 

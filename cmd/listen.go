@@ -29,7 +29,7 @@ func init() {
 }
 
 func listen() error {
-	deps := utils.SetupDependencies(Local)
+	deps := utils.SetupDependencies(Local, Verbose)
 
 	token, err := deps.Store.Get()
 	if err != nil {
