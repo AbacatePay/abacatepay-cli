@@ -14,6 +14,7 @@ import (
 	"abacatepay-cli/internal/logger"
 	"abacatepay-cli/internal/webhook"
 
+	"github.com/creativeprojects/go-selfupdate"
 	"github.com/go-resty/resty/v2"
 )
 
@@ -23,6 +24,7 @@ type StartListenerParams struct {
 	Client     *resty.Client
 	Store      auth.TokenStore
 	ForwardURL string
+	Version    string
 }
 
 type Dependencies struct {
@@ -32,6 +34,8 @@ type Dependencies struct {
 }
 
 func StartListener(params *StartListenerParams) error {
+	go ShowUpdate(params.Version)
+
 	token, err := params.Store.Get()
 	if err != nil {
 		return fmt.Errorf("erro ao recuperar token: %w", err)
@@ -97,4 +101,35 @@ func SetupDependencies(local bool, verbose bool) *Dependencies {
 		Client: cli,
 		Store:  store,
 	}
+}
+
+func ShowUpdate(currentVersion string) {
+	ctx := context.Background()
+
+	latest, found, err := selfupdate.DetectLatest(ctx, selfupdate.ParseSlug("AbacatePay/abacatepay-cli"))
+	if err != nil || !found {
+		return
+	}
+
+	if latest.LessOrEqual(currentVersion) {
+		return
+	}
+
+	// ANSI Colors
+	green := "\033[32m"
+	yellow := "\033[33m"
+	reset := "\033[0m"
+	bold := "\033[1m"
+
+	fmt.Println()
+	fmt.Println(green + "╭──────────────────────────────────────────────────────────────╮" + reset)
+	fmt.Println(green + "│" + reset + "                                                              " + green + "│" + reset)
+	fmt.Printf(green+"│"+reset+"   🥑 %sNova versão disponível:%s %-18s         "+green+"│"+reset+"\n", bold, reset, yellow+latest.Version()+reset)
+	fmt.Printf(green+"│"+reset+"      Atual: %-41s "+green+"│"+reset+"\n", currentVersion)
+	fmt.Println(green + "│" + reset + "                                                              " + green + "│" + reset)
+	fmt.Printf(green + "│" + reset + "   Para atualizar execute:                                    " + green + "│" + reset + "\n")
+	fmt.Printf(green+"│"+reset+"   %sabacatepay-cli update%s                                  "+green+"│"+reset+"\n", bold, reset)
+	fmt.Println(green + "│" + reset + "                                                              " + green + "│" + reset)
+	fmt.Println(green + "╰──────────────────────────────────────────────────────────────╯" + reset)
+	fmt.Println()
 }

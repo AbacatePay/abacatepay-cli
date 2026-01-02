@@ -53,6 +53,7 @@ func listen() error {
 		Client:     deps.Client,
 		ForwardURL: forwardURL,
 		Store:      deps.Store,
+		Version:    rootCmd.Version,
 	}
 	if err := utils.StartListener(params); err != nil {
 		return fmt.Errorf("error to start listener: %w", err)
