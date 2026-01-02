@@ -104,18 +104,26 @@ func SetupDependencies(local bool, verbose bool) *Dependencies {
 }
 
 func ShowUpdate(currentVersion string) {
+	fmt.Println("[DEBUG] Verificando atualizações para versão:", currentVersion)
 	ctx := context.Background()
 
 	latest, found, err := selfupdate.DetectLatest(ctx, selfupdate.ParseSlug("AbacatePay/abacatepay-cli"))
-	if err != nil || !found {
+	if err != nil {
+		fmt.Println("[DEBUG] Erro ao buscar update:", err)
 		return
 	}
+	if !found {
+		fmt.Println("[DEBUG] Nenhuma versão encontrada no GitHub")
+		return
+	}
+
+	fmt.Printf("[DEBUG] Última versão encontrada: %s\n", latest.Version())
 
 	if latest.LessOrEqual(currentVersion) {
+		fmt.Println("[DEBUG] Versão atual já é a mais recente")
 		return
 	}
 
-	// ANSI Colors
 	green := "\033[32m"
 	yellow := "\033[33m"
 	reset := "\033[0m"
