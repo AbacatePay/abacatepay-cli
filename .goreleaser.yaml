@@ -20,11 +20,11 @@ builds:
       - -s -w -X main.version={{.Version}}
 
 archives:
-  - format: tar.gz
+  - formats: ["tar.gz"]
     # Use zip for windows
     format_overrides:
       - goos: windows
-        format: zip
+        formats: ["zip"]
     wrap_in_directory: false
     name_template: >-
       {{ .ProjectName }}_
@@ -35,7 +35,7 @@ checksum:
   name_template: 'checksums.txt'
 
 snapshot:
-  name_template: "{{ .Tag }}-next"
+  version_template: "{{ .Tag }}-next"
 
 changelog:
   sort: asc

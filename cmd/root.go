@@ -9,7 +9,7 @@ import (
 var rootCmd = &cobra.Command{
 	Use:     "abacatepay-cli",
 	Short:   "AbacatePay CLI para executar webhooks localmente",
-	Version: "0.0.1",
+	Version: "0.0.0",
 }
 var Local, Verbose bool
 
