@@ -1,4 +1,5 @@
 # .goreleaser.yaml
+version: 2
 project_name: abacatepay-cli
 
 before:
