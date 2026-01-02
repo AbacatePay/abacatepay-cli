@@ -14,6 +14,7 @@ import (
 	"abacatepay-cli/internal/logger"
 	"abacatepay-cli/internal/webhook"
 
+	"github.com/charmbracelet/lipgloss"
 	"github.com/creativeprojects/go-selfupdate"
 	"github.com/go-resty/resty/v2"
 )
@@ -103,41 +104,59 @@ func SetupDependencies(local bool, verbose bool) *Dependencies {
 	}
 }
 
-func ShowUpdate(currentVersion string) {
-	fmt.Println("[DEBUG] Verificando atualizações para versão:", currentVersion)
-	ctx := context.Background()
-
-	latest, found, err := selfupdate.DetectLatest(ctx, selfupdate.ParseSlug("AbacatePay/abacatepay-cli"))
+func CheckUpdate(ctx context.Context, currentVersion string) (*selfupdate.Release, bool, error) {
+	slug := "AbacatePay/abacatepay-cli"
+	latest, found, err := selfupdate.DetectLatest(ctx, selfupdate.ParseSlug(slug))
 	if err != nil {
-		fmt.Println("[DEBUG] Erro ao buscar update:", err)
-		return
+		return nil, false, err
 	}
+
+	if !found || latest.LessOrEqual(currentVersion) {
+		return nil, false, nil
+	}
+
+	return latest, true, nil
+}
+
+func ShowUpdate(currentVersion string) {
+	latest, found, _ := CheckUpdate(context.Background(), currentVersion)
 	if !found {
-		fmt.Println("[DEBUG] Nenhuma versão encontrada no GitHub")
 		return
 	}
 
-	fmt.Printf("[DEBUG] Última versão encontrada: %s\n", latest.Version())
+	// Estilos do Lipgloss
+	var (
+		primaryColor = lipgloss.Color("#25D366") // Verde Abacate
+		yellowColor  = lipgloss.Color("#FFFF00") // Amarelo Destaque
 
-	if latest.LessOrEqual(currentVersion) {
-		fmt.Println("[DEBUG] Versão atual já é a mais recente")
-		return
-	}
+		boxStyle = lipgloss.NewStyle().
+			BorderStyle(lipgloss.RoundedBorder()).
+			BorderForeground(primaryColor).
+			Padding(1, 2).
+			MarginTop(1).
+			MarginBottom(1)
 
-	green := "\033[32m"
-	yellow := "\033[33m"
-	reset := "\033[0m"
-	bold := "\033[1m"
+		titleStyle = lipgloss.NewStyle().
+			Foreground(primaryColor).
+			Bold(true)
 
-	fmt.Println()
-	fmt.Println(green + "╭──────────────────────────────────────────────────────────────╮" + reset)
-	fmt.Println(green + "│" + reset + "                                                              " + green + "│" + reset)
-	fmt.Printf(green+"│"+reset+"   🥑 %sNova versão disponível:%s %-18s         "+green+"│"+reset+"\n", bold, reset, yellow+latest.Version()+reset)
-	fmt.Printf(green+"│"+reset+"      Atual: %-41s "+green+"│"+reset+"\n", currentVersion)
-	fmt.Println(green + "│" + reset + "                                                              " + green + "│" + reset)
-	fmt.Printf(green + "│" + reset + "   Para atualizar execute:                                    " + green + "│" + reset + "\n")
-	fmt.Printf(green+"│"+reset+"   %sabacatepay-cli update%s                                  "+green+"│"+reset+"\n", bold, reset)
-	fmt.Println(green + "│" + reset + "                                                              " + green + "│" + reset)
-	fmt.Println(green + "╰──────────────────────────────────────────────────────────────╯" + reset)
-	fmt.Println()
+		versionStyle = lipgloss.NewStyle().
+			Foreground(yellowColor).
+			Bold(true)
+
+		commandStyle = lipgloss.NewStyle().
+			Foreground(primaryColor).
+			Bold(true)
+	)
+
+	// Construção da mensagem
+	msg := fmt.Sprintf(
+		"🥑 %s %s\n      Atual: %s\n\n   Para atualizar execute:\n   %s",
+		titleStyle.Render("Nova versão disponível:"),
+		versionStyle.Render(latest.Version()),
+		currentVersion,
+		commandStyle.Render("abacatepay-cli update"),
+	)
+
+	fmt.Println(boxStyle.Render(msg))
 }

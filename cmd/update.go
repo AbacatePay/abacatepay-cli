@@ -5,6 +5,8 @@ import (
 	"fmt"
 	"os"
 
+	"abacatepay-cli/internal/utils"
+
 	"github.com/creativeprojects/go-selfupdate"
 	"github.com/spf13/cobra"
 )
@@ -22,18 +24,26 @@ func init() {
 }
 
 func update() error {
-	const slug string = "AbacatePay/abacatepay-cli"
+	ctx := context.Background()
 
-	latest, found, err := selfupdate.DetectLatest(context.Background(), selfupdate.ParseSlug(slug))
+	latest, found, err := utils.CheckUpdate(ctx, rootCmd.Version)
 	if err != nil {
-		return fmt.Errorf("error to update cli's version: %w", err)
+		return fmt.Errorf("erro ao verificar atualizações: %w", err)
 	}
 
-	if !found || latest.LessOrEqual(rootCmd.Version) {
+	if !found {
+		fmt.Printf("Você já está na versão mais recente (%s)\n", rootCmd.Version)
 		return nil
 	}
 
-	exe, _ := os.Executable()
+	fmt.Printf("Nova versão encontrada: %s\n", latest.Version())
+	fmt.Println("Baixando e instalando atualização...")
 
-	return selfupdate.UpdateTo(context.Background(), latest.AssetURL, latest.AssetName, exe)
+	exe, _ := os.Executable()
+	if err := selfupdate.UpdateTo(ctx, latest.AssetURL, latest.AssetName, exe); err != nil {
+		return fmt.Errorf("erro ao atualizar: %w", err)
+	}
+
+	fmt.Println("Atualizado com sucesso!")
+	return nil
 }

@@ -15,7 +15,7 @@ builds:
     goarch:
       - amd64
       - arm64
-    binary: abacatepay
+    binary: abacatepay-cli
     ldflags:
       - -s -w -X main.version={{.Version}}
 
@@ -25,6 +25,7 @@ archives:
     format_overrides:
       - goos: windows
         format: zip
+    wrap_in_directory: false
     name_template: >-
       {{ .ProjectName }}_
       {{- .Os }}_
