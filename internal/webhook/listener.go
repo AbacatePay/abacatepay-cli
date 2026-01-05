@@ -1,6 +1,7 @@
 package webhook
 
 import (
+	"bytes"
 	"context"
 	"encoding/json"
 	"fmt"
@@ -58,47 +59,21 @@ func (l *Listener) Listen(ctx context.Context) error {
 }
 
 func (l *Listener) readLoop(ctx context.Context, conn *websocket.Conn) error {
+	const requestLimitPerSecond int = 10
 	g, gCtx := errgroup.WithContext(ctx)
-	g.SetLimit(10)
+	g.SetLimit(requestLimitPerSecond)
 
-	conn.SetPongHandler(func(string) error {
-		l.connMu.Lock()
-		defer l.connMu.Unlock()
-		conn.SetReadDeadline(time.Now().Add(90 * time.Second))
-		return nil
-	})
+	l.SetupConn(conn)
 
 	g.Go(func() error {
-		ticker := time.NewTicker(30 * time.Second)
-		defer ticker.Stop()
-		for {
-			select {
-			case <-gCtx.Done():
-				l.connMu.Lock()
-				conn.WriteControl(
-					websocket.CloseMessage,
-					websocket.FormatCloseMessage(websocket.CloseNormalClosure, ""),
-					time.Now().Add(time.Second),
-				)
-				l.connMu.Unlock()
-				return nil
-			case <-ticker.C:
-				l.connMu.Lock()
-				err := conn.WriteControl(websocket.PingMessage, nil, time.Now().Add(10*time.Second))
-				l.connMu.Unlock()
-				if err != nil {
-					slog.Debug("Falha ao enviar ping", "error", err)
-					return err
-				}
-			}
-		}
+		return l.heartbeat(gCtx, conn)
 	})
 
 	for {
 		select {
 		case <-gCtx.Done():
-			_ = g.Wait()
-			return nil
+			return g.Wait()
+
 		default:
 		}
 
@@ -134,38 +109,87 @@ func (l *Listener) readLoop(ctx context.Context, conn *websocket.Conn) error {
 	}
 }
 
+func (l *Listener) SetupConn(conn *websocket.Conn) {
+	conn.SetPongHandler(func(string) error {
+		l.connMu.Lock()
+		defer l.connMu.Unlock()
+		return conn.SetReadDeadline(time.Now().Add(90 * time.Second))
+	})
+}
+
+func (l *Listener) heartbeat(ctx context.Context, conn *websocket.Conn) error {
+	ticker := time.NewTicker(30 * time.Second)
+	defer ticker.Stop()
+
+	for {
+		select {
+		case <-ctx.Done():
+			l.connMu.Lock()
+			conn.WriteControl(
+				websocket.CloseMessage,
+				websocket.FormatCloseMessage(websocket.CloseNormalClosure, ""),
+				time.Now().Add(time.Second),
+			)
+			l.connMu.Unlock()
+			return nil
+
+		case <-ticker.C:
+			l.connMu.Lock()
+			err := conn.WriteControl(websocket.PingMessage, nil, time.Now().Add(10*time.Second))
+			l.connMu.Unlock()
+
+			if err != nil {
+				slog.Debug("Falha ao enviar ping", "error", err)
+				return err
+			}
+		}
+	}
+}
+
 func (l *Listener) logWebhook(message []byte) {
 	var webhook Message
-	if err := json.Unmarshal(message, &webhook); err == nil {
-		slog.Info("Webhook recebido", "event", webhook.Event, "size_bytes", len(message))
+	slog.Info("Webhook recebido", "size_bytes", len(message))
 
-		l.txLogger.Info("webhook_received",
-			"event", webhook.Event,
-			"timestamp", time.Now().Format(time.RFC3339),
-			"size_bytes", len(message),
-			"data", string(webhook.Data),
-		)
-	} else {
-		slog.Info("Webhook recebido", "size_bytes", len(message))
-
-		l.txLogger.Info("webhook_received",
-			"timestamp", time.Now().Format(time.RFC3339),
-			"size_bytes", len(message),
-			"raw_message", string(message),
-		)
+	if err := json.Unmarshal(message, &webhook); err != nil {
+		l.logRaw(message)
+		return
 	}
 
-	var prettyJSON interface{}
-	if err := json.Unmarshal(message, &prettyJSON); err == nil {
-		formatted, err := json.MarshalIndent(prettyJSON, "", "  ")
-		if err != nil {
-			fmt.Println(string(message))
-		} else {
-			fmt.Println(string(formatted))
-		}
-	} else {
-		fmt.Println(string(message))
+	l.txLogger.Info("webhook_received",
+		"timestamp", time.Now().Format(time.RFC3339),
+		"size_bytes", len(message),
+		"raw_message", string(message),
+	)
+
+	l.renderOutput(message)
+}
+
+func (l *Listener) logRaw(msg []byte) {
+	slog.Info("Webhook recebido (raw)", "size", len(msg))
+
+	l.txLogger.Info("webhook_received_raw",
+		"timestamp", time.Now().Format(time.RFC3339),
+		"size_bytes", len(msg),
+		"data", string(msg),
+	)
+
+	fmt.Println(string(msg))
+}
+
+func (l *Listener) renderOutput(msg []byte) {
+	if !l.cfg.Verbose {
+		fmt.Println(string(msg))
+		return
 	}
+
+	var buf bytes.Buffer
+	if err := json.Indent(&buf, msg, "", "  "); err != nil {
+		fmt.Println(string(msg))
+		return
+
+	}
+
+	fmt.Println(buf.String())
 }
 
 func (l *Listener) forward(ctx context.Context, message []byte) error {

@@ -48,7 +48,7 @@ func Setup(cfg *Config) (*slog.Logger, error) {
 		Compress:   cfg.Compress,
 	}
 
-	multiWriter := io.MultiWriter(os.Stdout, logFile)
+	multiWriter := io.MultiWriter(os.Stderr, logFile)
 
 	handler := slog.NewJSONHandler(multiWriter, &slog.HandlerOptions{
 		Level: cfg.Level,
@@ -84,7 +84,7 @@ func NewTransactionLogger(cfg *Config) (*slog.Logger, error) {
 }
 
 func NewConsoleLogger(level slog.Level) *slog.Logger {
-	handler := slog.NewTextHandler(os.Stdout, &slog.HandlerOptions{
+	handler := slog.NewTextHandler(os.Stderr, &slog.HandlerOptions{
 		Level: level,
 	})
 	return slog.New(handler)

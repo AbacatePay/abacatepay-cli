@@ -2,6 +2,7 @@ package cmd
 
 import (
 	"log/slog"
+	"os"
 
 	"github.com/spf13/cobra"
 )
@@ -18,9 +19,15 @@ func Exec() {
 	rootCmd.PersistentFlags().BoolVarP(&Local, "local", "l", false, "Usar servidor de teste")
 
 	rootCmd.PersistentPreRun = func(cmd *cobra.Command, args []string) {
+		level := slog.LevelInfo
 		if Verbose {
-			slog.SetLogLoggerLevel(slog.LevelDebug)
+			level = slog.LevelDebug
 		}
+
+		handler := slog.NewJSONHandler(os.Stderr, &slog.HandlerOptions{
+			Level: level,
+		})
+		slog.SetDefault(slog.New(handler))
 	}
 
 	cobra.CheckErr(rootCmd.Execute())
