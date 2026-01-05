@@ -131,6 +131,8 @@ dist
 
 # Go binaries
 abacatepay-cli
+abacate
+
 *.exe
 *.exe~
 *.dll
