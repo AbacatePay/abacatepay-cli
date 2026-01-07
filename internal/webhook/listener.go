@@ -14,6 +14,7 @@ import (
 	"golang.org/x/sync/errgroup"
 
 	"abacatepay-cli/internal/config"
+	"abacatepay-cli/internal/ws"
 )
 
 type Message struct {
@@ -43,31 +44,17 @@ func NewListener(cfg *config.Config, client *resty.Client, forwardURL, token str
 func (l *Listener) Listen(ctx context.Context) error {
 	slog.Info("Iniciando listener de webhooks...")
 
-	conn, err := l.connect(ctx)
-	if err != nil {
-		return err
-	}
-	defer conn.Close()
-
-	slog.Info("Listener iniciado", "forward_url", l.forwardURL)
-
-	return l.readLoop(ctx, conn)
-}
-
-func (l *Listener) connect(ctx context.Context) (*websocket.Conn, error) {
 	header := http.Header{}
 	header.Add("Authorization", "Bearer "+l.token)
 
-	dialer := websocket.Dialer{
-		HandshakeTimeout: l.cfg.HTTPTimeout,
+	cfg := ws.Config{
+		URL:        l.cfg.WebSocketBaseURL,
+		Headers:    header,
+		MinBackoff: 1 * time.Second,
+		MaxBackoff: 30 * time.Second,
 	}
 
-	conn, _, err := dialer.DialContext(ctx, l.cfg.WebSocketBaseURL, header)
-	if err != nil {
-		return nil, fmt.Errorf("falha ao conectar WebSocket: %w", err)
-	}
-
-	return conn, nil
+	return ws.ConnectWithRetry(ctx, cfg, l.readLoop)
 }
 
 func (l *Listener) readLoop(ctx context.Context, conn *websocket.Conn) error {

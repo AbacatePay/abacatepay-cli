@@ -29,7 +29,7 @@ func init() {
 }
 
 func listen() error {
-	deps := utils.SetupDependencies(Local)
+	deps := utils.SetupDependencies(Local, Verbose)
 
 	token, err := deps.Store.Get()
 	if err != nil {
@@ -53,6 +53,7 @@ func listen() error {
 		Client:     deps.Client,
 		ForwardURL: forwardURL,
 		Store:      deps.Store,
+		Version:    rootCmd.Version,
 	}
 	if err := utils.StartListener(params); err != nil {
 		return fmt.Errorf("error to start listener: %w", err)

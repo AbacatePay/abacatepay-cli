@@ -14,6 +14,8 @@ import (
 	"abacatepay-cli/internal/logger"
 	"abacatepay-cli/internal/webhook"
 
+	"github.com/charmbracelet/lipgloss"
+	"github.com/creativeprojects/go-selfupdate"
 	"github.com/go-resty/resty/v2"
 )
 
@@ -23,6 +25,7 @@ type StartListenerParams struct {
 	Client     *resty.Client
 	Store      auth.TokenStore
 	ForwardURL string
+	Version    string
 }
 
 type Dependencies struct {
@@ -32,6 +35,8 @@ type Dependencies struct {
 }
 
 func StartListener(params *StartListenerParams) error {
+	go ShowUpdate(params.Version)
+
 	token, err := params.Store.Get()
 	if err != nil {
 		return fmt.Errorf("erro ao recuperar token: %w", err)
@@ -85,8 +90,10 @@ func PromptForURL(defaultURL string) string {
 	return input
 }
 
-func SetupDependencies(local bool) *Dependencies {
+func SetupDependencies(local bool, verbose bool) *Dependencies {
 	cfg := GetConfig(local)
+	cfg.Verbose = verbose
+
 	cli := client.New(cfg)
 	store := GetStore(cfg)
 
@@ -95,4 +102,61 @@ func SetupDependencies(local bool) *Dependencies {
 		Client: cli,
 		Store:  store,
 	}
+}
+
+func CheckUpdate(ctx context.Context, currentVersion string) (*selfupdate.Release, bool, error) {
+	slug := "AbacatePay/abacatepay-cli"
+	latest, found, err := selfupdate.DetectLatest(ctx, selfupdate.ParseSlug(slug))
+	if err != nil {
+		return nil, false, err
+	}
+
+	if !found || latest.LessOrEqual(currentVersion) {
+		return nil, false, nil
+	}
+
+	return latest, true, nil
+}
+
+func ShowUpdate(currentVersion string) {
+	latest, found, _ := CheckUpdate(context.Background(), currentVersion)
+	if !found {
+		return
+	}
+
+	// Estilos do Lipgloss
+	var (
+		primaryColor = lipgloss.Color("#25D366") // Verde Abacate
+		yellowColor  = lipgloss.Color("#FFFF00") // Amarelo Destaque
+
+		boxStyle = lipgloss.NewStyle().
+			BorderStyle(lipgloss.RoundedBorder()).
+			BorderForeground(primaryColor).
+			Padding(1, 2).
+			MarginTop(1).
+			MarginBottom(1)
+
+		titleStyle = lipgloss.NewStyle().
+			Foreground(primaryColor).
+			Bold(true)
+
+		versionStyle = lipgloss.NewStyle().
+			Foreground(yellowColor).
+			Bold(true)
+
+		commandStyle = lipgloss.NewStyle().
+			Foreground(primaryColor).
+			Bold(true)
+	)
+
+	// Construção da mensagem
+	msg := fmt.Sprintf(
+		"🥑 %s %s\n      Atual: %s\n\n   Para atualizar execute:\n   %s",
+		titleStyle.Render("Nova versão disponível:"),
+		versionStyle.Render(latest.Version()),
+		currentVersion,
+		commandStyle.Render("abacatepay-cli update"),
+	)
+
+	fmt.Println(boxStyle.Render(msg))
 }

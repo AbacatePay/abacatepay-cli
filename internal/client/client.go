@@ -11,5 +11,6 @@ func New(cfg *config.Config) *resty.Client {
 		SetTimeout(cfg.HTTPTimeout).
 		SetRetryCount(cfg.RetryCount).
 		SetRetryWaitTime(cfg.RetryWaitTime).
-		SetHeader("User-Agent", "abacatepay-cli/1.0")
+		SetHeader("User-Agent", "abacatepay-cli/1.0").
+		SetDebug(cfg.Verbose)
 }

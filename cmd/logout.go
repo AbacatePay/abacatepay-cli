@@ -20,6 +20,6 @@ func init() {
 }
 
 func logout() error {
-	deps := utils.SetupDependencies(Local)
+	deps := utils.SetupDependencies(Local, Verbose)
 	return auth.Logout(deps.Store)
 }

@@ -30,7 +30,7 @@ func init() {
 }
 
 func login() error {
-	deps := utils.SetupDependencies(Local)
+	deps := utils.SetupDependencies(Local, Verbose)
 
 	ctx, cancel := signal.NotifyContext(context.Background(), os.Interrupt, syscall.SIGTERM)
 	defer cancel()
