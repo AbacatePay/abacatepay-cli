@@ -54,10 +54,10 @@ func StartListener(params *StartListenerParams) error {
 
 	listener := webhook.NewListener(params.Config, params.Client, params.ForwardURL, token, txLogger)
 
-	fmt.Println()
+	fmt.Fprintln(os.Stderr)
 	slog.Info("Iniciando escuta de webhooks...", "forward_url", params.ForwardURL)
-	fmt.Println("Pressione Ctrl+C para parar")
-	fmt.Println()
+	fmt.Fprintln(os.Stderr, "Pressione Ctrl+C para parar")
+	fmt.Fprintln(os.Stderr)
 
 	return listener.Listen(params.Context)
 }
@@ -76,7 +76,7 @@ func GetStore(cfg *config.Config) auth.TokenStore {
 func PromptForURL(defaultURL string) string {
 	reader := bufio.NewReader(os.Stdin)
 
-	fmt.Printf("\nURL para encaminhar webhooks [%s]: ", defaultURL)
+	fmt.Fprintf(os.Stderr, "\nURL para encaminhar webhooks [%s]: ", defaultURL)
 	input, err := reader.ReadString('\n')
 	if err != nil {
 		return defaultURL
@@ -158,5 +158,5 @@ func ShowUpdate(currentVersion string) {
 		commandStyle.Render("abacatepay-cli update"),
 	)
 
-	fmt.Println(boxStyle.Render(msg))
+	fmt.Fprintln(os.Stderr, boxStyle.Render(msg))
 }
