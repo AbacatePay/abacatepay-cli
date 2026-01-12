@@ -174,36 +174,33 @@ func ShowUpdate(currentVersion string) {
 
 func GenerateValidCPF(r *rand.Rand) string {
 	digits := make([]int, 11)
-	for i := 0; i < 9; i++ {
+	for i := range 9 {
 		digits[i] = r.Intn(10)
 	}
 
 	sum := 0
-	for i := 0; i < 9; i++ {
+	for i := range 9 {
 		sum += digits[i] * (10 - i)
 	}
-	remainder := (sum * 10) % 11
-	if remainder == 10 || remainder == 11 {
-		digits[9] = 0
-	} else {
-		digits[9] = remainder
-	}
+	digits[9] = calculateDigit(sum)
 
 	sum = 0
-	for i := 0; i < 10; i++ {
+	for i := range 10 {
 		sum += digits[i] * (11 - i)
 	}
-
-	remainder = (sum * 10) % 11
-	if remainder == 10 || remainder == 11 {
-		digits[10] = 0
-	} else {
-		digits[10] = remainder
-	}
+	digits[10] = calculateDigit(sum)
 
 	cpf := ""
 	for _, d := range digits {
 		cpf += fmt.Sprintf("%d", d)
 	}
 	return cpf
+}
+
+func calculateDigit(sum int) int {
+	remainder := (sum * 10) % 11
+	if remainder >= 10 {
+		return 0
+	}
+	return remainder
 }
