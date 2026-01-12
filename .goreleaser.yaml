@@ -1,31 +1,52 @@
-# .goreleaser.yaml
 version: 2
-project_name: abacatepay-cli
+
+project_name: abacatepay
 
 before:
   hooks:
     - go mod tidy
 
 builds:
-  - env:
+  - id: abacatepay
+    binary: abacatepay
+    env:
       - CGO_ENABLED=0
     goos:
       - linux
-      - windows
       - darwin
+      - windows
     goarch:
       - amd64
       - arm64
-    binary: abacatepay-cli
+    ldflags:
+      - -s -w -X main.version={{.Version}}
+
+  # Alias (abkt)
+  - id: abkt
+    binary: abkt
+    env:
+      - CGO_ENABLED=0
+    goos:
+      - linux
+      - darwin
+      - windows
+    goarch:
+      - amd64
+      - arm64
     ldflags:
       - -s -w -X main.version={{.Version}}
 
 archives:
-  - formats: ["tar.gz"]
-    # Use zip for windows
+  - id: default
+    builds:
+      - abacatepay
+      - abkt
+    formats:
+      - tar.gz
     format_overrides:
       - goos: windows
-        formats: ["zip"]
+        formats:
+          - zip
     wrap_in_directory: false
     name_template: >-
       {{ .ProjectName }}_
@@ -33,7 +54,7 @@ archives:
       {{- .Arch }}
 
 checksum:
-  name_template: 'checksums.txt'
+  name_template: checksums.txt
 
 snapshot:
   version_template: "{{ .Tag }}-next"
@@ -44,3 +65,27 @@ changelog:
     exclude:
       - '^docs:'
       - '^test:'
+      - '^chore:'
+
+# Homebrew
+brews:
+  - name: abacatepay
+    repository:
+      owner: AbacatePay
+      name: homebrew-tap
+    folder: Formula
+    homepage: https://abacatepay.com
+    description: AbacatePay’s developer-first CLI for APIs and local workflows 
+    license: MIT
+    install: |
+      bin.install "abacatepay"
+      bin.install "abkt"
+
+# Autocomplete
+completions:
+  bash:
+    name: abacatepay
+  zsh:
+    name: _abacatepay
+  fish:
+    name: abacatepay.fish
