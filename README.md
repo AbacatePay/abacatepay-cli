@@ -88,7 +88,7 @@ O token é armazenado no keyring nativo do sistema operacional:
 | `withdraw.done`   | Saque concluído      |
 | `withdraw.failed` | Saque falhou         |
 
-Consulte a [documentação de webhooks](https://abacatepay.com/docs/webhooks) para detalhes dos payloads.
+Consulte a [documentação de webhooks](https://docs.abacatepay.com/pages/webhooks) para detalhes dos payloads.
 
 ## Exemplo Completo
 
@@ -194,5 +194,5 @@ MIT
 
 ## Suporte
 
-- Documentação: https://abacatepay.com/docs
+- Documentação: https://docs.abacatepay.com/
 - Issues: https://github.com/AbacatePay/abacatepay-cli/issues
