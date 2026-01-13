@@ -47,3 +47,11 @@ func (m *MemoryStore) SetActiveProfile(name string) error {
 func (m *MemoryStore) GetActiveProfile() (string, error) {
 	return m.activeProfile, nil
 }
+
+func (m *MemoryStore) List() ([]string, error) {
+	var profiles []string
+	for k := range m.tokens {
+		profiles = append(profiles, k)
+	}
+	return profiles, nil
+}
