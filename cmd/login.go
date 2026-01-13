@@ -2,6 +2,7 @@ package cmd
 
 import (
 	"context"
+	"fmt"
 	"os"
 	"os/signal"
 	"syscall"
@@ -30,8 +31,11 @@ func init() {
 }
 
 func login() error {
-	deps := utils.SetupDependencies(Local, Verbose)
+	if !utils.IsOnline() {
+		return fmt.Errorf("you're offline, please stabilish your connection to continue")
+	}
 
+	deps := utils.SetupDependencies(Local, Verbose)
 	ctx, cancel := signal.NotifyContext(context.Background(), os.Interrupt, syscall.SIGTERM)
 	defer cancel()
 
@@ -42,6 +46,7 @@ func login() error {
 		Context:     ctx,
 		APIKey:      key,
 		ProfileName: name,
+		OpenBrowser: utils.OpenBrowser,
 	}
 
 	if err := auth.Login(params); err != nil {
