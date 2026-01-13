@@ -4,6 +4,8 @@ import (
 	"log/slog"
 	"os"
 
+	"abacatepay-cli/internal/logger"
+
 	"github.com/spf13/cobra"
 )
 
@@ -24,10 +26,19 @@ func Exec() {
 			level = slog.LevelDebug
 		}
 
-		handler := slog.NewJSONHandler(os.Stderr, &slog.HandlerOptions{
-			Level: level,
-		})
-		slog.SetDefault(slog.New(handler))
+		cfg, err := logger.DefaultConfig()
+		if err != nil {
+			h := slog.NewTextHandler(os.Stderr, &slog.HandlerOptions{Level: level})
+			slog.SetDefault(slog.New(h))
+			return
+		}
+
+		cfg.Level = level
+
+		if _, err := logger.Setup(cfg); err != nil {
+			h := slog.NewTextHandler(os.Stderr, &slog.HandlerOptions{Level: level})
+			slog.SetDefault(slog.New(h))
+		}
 	}
 
 	cobra.CheckErr(rootCmd.Execute())
