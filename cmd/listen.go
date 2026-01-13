@@ -31,16 +31,17 @@ func init() {
 func listen() error {
 	deps := utils.SetupDependencies(Local, Verbose)
 
-	token, err := deps.Store.Get()
-	if err != nil {
-		return err
-	}
-
-	if token == "" {
+	activeProfile, err := deps.Store.GetActiveProfile()
+	if err != nil || activeProfile == "" {
 		return fmt.Errorf("não autenticado. Execute 'abacatepay-cli login' primeiro")
 	}
 
-	if forwardURL == "" {
+	token, err := deps.Store.GetNamed(activeProfile)
+	if err != nil || token == "" {
+		return fmt.Errorf("token não encontrado para o perfil %s. Por favor, faça login novamente", activeProfile)
+	}
+
+	if forwardURL == "" || forwardURL == "http://localhost:3000/webhooks/abacatepay" {
 		forwardURL = utils.PromptForURL(deps.Config.DefaultForwardURL)
 	}
 

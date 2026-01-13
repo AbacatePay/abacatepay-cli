@@ -8,70 +8,173 @@ import (
 	"os"
 	"time"
 
-	"github.com/briandowns/spinner"
-	"github.com/go-resty/resty/v2"
+		"github.com/briandowns/spinner"
 
-	"abacatepay-cli/internal/config"
-)
+		"github.com/go-resty/resty/v2"
 
-type DeviceLoginResponse struct {
-	VerificationURI string `json:"verificationUri"`
-	DeviceCode      string `json:"deviceCode"`
-}
+	
 
-type TokenResponse struct {
-	Token string `json:"token"`
-}
+		"abacatepay-cli/internal/config"
 
-type LoginParams struct {
-	Config  *config.Config
-	Client  *resty.Client
-	Store   TokenStore
-	Context context.Context
-}
+	)
 
-func Login(params *LoginParams) error {
-	host, err := os.Hostname()
-	if err != nil {
-		host = "unknown"
+	
+
+	type DeviceLoginResponse struct {
+
+		VerificationURI string `json:"verificationUri"`
+
+		DeviceCode      string `json:"deviceCode"`
+
 	}
 
-	var result DeviceLoginResponse
-	resp, err := params.Client.R().
-		SetContext(params.Context).
-		SetBody(map[string]string{"host": host}).
-		SetResult(&result).
-		Post(params.Config.APIBaseURL + "/device-login")
+	
 
-	if err != nil {
-		return fmt.Errorf("falha na requisição de login: %w", err)
+	type TokenResponse struct {
+
+		Token string `json:"token"`
+
 	}
 
-	if resp.StatusCode() != http.StatusOK {
-		return fmt.Errorf("login falhou com status %d", resp.StatusCode())
+	
+
+	type LoginParams struct {
+
+		Config      *config.Config
+
+		Client      *resty.Client
+
+		Store       TokenStore
+
+		Context     context.Context
+
+		APIKey      string
+
+		ProfileName string
+
 	}
 
-	if result.VerificationURI == "" {
-		return fmt.Errorf("resposta inválida: URI de verificação ausente")
-	}
+	
 
-	if result.DeviceCode == "" {
-		return fmt.Errorf("resposta inválida: código do dispositivo ausente")
-	}
+	func Login(params *LoginParams) error {
 
-	fmt.Println("Abra o seguinte link no navegador para autenticar:")
-	fmt.Printf("%s\n", result.VerificationURI)
+		profile := params.ProfileName
 
-	token, err := pollForToken(params.Context, params.Config, params.Client, result.DeviceCode)
-	if err != nil {
-		return err
-	}
+		if profile == "" {
 
-	if err := params.Store.Save(token); err != nil {
+			profile = fmt.Sprintf("profile-%d", time.Now().Unix()%10000)
+
+		}
+
+	
+
+		if params.APIKey != "" {
+
+			user, err := ValidateToken(params.Client, params.Config.APIBaseURL, params.APIKey)
+
+			if err != nil {
+
+				return err
+
+			}
+
+	
+
+			if err := params.Store.SaveNamed(profile, params.APIKey); err != nil {
+
+				return fmt.Errorf("falha ao salvar API Key: %w", err)
+
+			}
+
+	
+
+			if err := params.Store.SetActiveProfile(profile); err != nil {
+
+				return fmt.Errorf("falha ao definir perfil ativo: %w", err)
+
+			}
+
+	
+
+			fmt.Printf("Bem-vindo, %s! API Key salva no perfil: %s\n", user.Name, profile)
+
+			return nil
+
+		}
+
+	
+
+		host, err := os.Hostname()
+
+		if err != nil {
+
+			host = "unknown"
+
+		}
+
+	
+
+		var result DeviceLoginResponse
+
+		resp, err := params.Client.R().
+
+			SetContext(params.Context).
+
+			SetBody(map[string]string{"host": host}).
+
+			SetResult(&result).
+
+			Post(params.Config.APIBaseURL + "/device-login")
+
+		if err != nil {
+
+			return fmt.Errorf("falha na requisição de login: %w", err)
+
+		}
+
+	
+
+		if resp.StatusCode() != http.StatusOK {
+
+			return fmt.Errorf("login falhou com status %d", resp.StatusCode())
+
+		}
+
+	
+
+		fmt.Println("Abra o seguinte link no navegador para autenticar:")
+
+		fmt.Printf("%s\n", result.VerificationURI)
+
+	
+
+		token, err := pollForToken(params.Context, params.Config, params.Client, result.DeviceCode)
+
+		if err != nil {
+
+			return err
+
+		}
+
+	
+
+		user, err := ValidateToken(params.Client, params.Config.APIBaseURL, token)
+
+		if err != nil {
+
+			return err
+
+		}
+
+	if err := params.Store.SaveNamed(profile, token); err != nil {
 		return fmt.Errorf("falha ao salvar token: %w", err)
 	}
 
-	slog.Info("Login realizado com sucesso")
+	if err := params.Store.SetActiveProfile(profile); err != nil {
+		return fmt.Errorf("falha ao definir perfil ativo: %w", err)
+	}
+
+	fmt.Printf("Bem-vindo, %s! Login realizado no perfil: %s\n", user.Name, profile)
 	return nil
 }
 
