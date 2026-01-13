@@ -9,7 +9,7 @@ import (
 
 var logoutCmd = &cobra.Command{
 	Use:   "logout",
-	Short: "Sair do AbacatePay",
+	Short: "Sign out of AbacatePay",
 	RunE: func(cmd *cobra.Command, args []string) error {
 		return logout()
 	},
@@ -21,5 +21,6 @@ func init() {
 
 func logout() error {
 	deps := utils.SetupDependencies(Local, Verbose)
+
 	return auth.Logout(deps.Store)
 }

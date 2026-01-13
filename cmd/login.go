@@ -15,7 +15,7 @@ import (
 
 var loginCmd = &cobra.Command{
 	Use:   "login",
-	Short: "Autenticar com AbacatePay",
+	Short: "Sign in to AbacatePay",
 	RunE: func(cmd *cobra.Command, args []string) error {
 		return login()
 	},
@@ -24,19 +24,20 @@ var loginCmd = &cobra.Command{
 var name, key string
 
 func init() {
-	loginCmd.Flags().StringVar(&key, "key", "", "Abacate Pay's API Key")
-	loginCmd.Flags().StringVar(&name, "name", "", "Abacate Pay's Profile Name")
+	loginCmd.Flags().StringVar(&name, "name", "", "Profile name")
+	loginCmd.Flags().StringVar(&key, "key", "", "Your AbacatePay API key")
 
 	rootCmd.AddCommand(loginCmd)
 }
 
 func login() error {
 	if !utils.IsOnline() {
-		return fmt.Errorf("you're offline, please stabilish your connection to continue")
+		return fmt.Errorf("you’re offline — check your connection and try again")
 	}
 
 	deps := utils.SetupDependencies(Local, Verbose)
 	ctx, cancel := signal.NotifyContext(context.Background(), os.Interrupt, syscall.SIGTERM)
+
 	defer cancel()
 
 	params := &auth.LoginParams{

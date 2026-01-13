@@ -43,7 +43,7 @@ func NewListener(cfg *config.Config, client *resty.Client, forwardURL, token str
 }
 
 func (l *Listener) Listen(ctx context.Context) error {
-	slog.Info("Iniciando listener de webhooks...")
+	slog.Info("Starting webhook listener...")
 
 	header := http.Header{}
 	header.Add("Authorization", "Bearer "+l.token)
@@ -60,6 +60,7 @@ func (l *Listener) Listen(ctx context.Context) error {
 
 func (l *Listener) readLoop(ctx context.Context, conn *websocket.Conn) error {
 	const requestLimitPerSecond int = 10
+
 	g, gCtx := errgroup.WithContext(ctx)
 	g.SetLimit(requestLimitPerSecond)
 
@@ -82,28 +83,34 @@ func (l *Listener) readLoop(ctx context.Context, conn *websocket.Conn) error {
 		l.connMu.Unlock()
 
 		_, message, err := conn.ReadMessage()
+
 		if err != nil {
 			if websocket.IsCloseError(err, websocket.CloseNormalClosure, websocket.CloseGoingAway) {
-				slog.Info("Conexão WebSocket fechada normalmente")
+				slog.Info("WebSocket connection closed")
+
 				_ = g.Wait()
+
 				return nil
 			}
 
 			if gCtx.Err() != nil {
 				_ = g.Wait()
+
 				return nil
 			}
 
 			_ = g.Wait()
-			return fmt.Errorf("erro ao ler mensagem: %w", err)
+
+			return fmt.Errorf("failed to read websocket message: %w", err)
 		}
 
 		l.logWebhook(message)
 
 		g.Go(func() error {
 			if err := l.forward(gCtx, message); err != nil {
-				slog.Error("Falha ao encaminhar webhook", "error", err)
+				slog.Error("Webhook forward failed", "error", err)
 			}
+
 			return nil
 		})
 	}
@@ -112,13 +119,16 @@ func (l *Listener) readLoop(ctx context.Context, conn *websocket.Conn) error {
 func (l *Listener) SetupConn(conn *websocket.Conn) {
 	conn.SetPongHandler(func(string) error {
 		l.connMu.Lock()
+
 		defer l.connMu.Unlock()
+		
 		return conn.SetReadDeadline(time.Now().Add(90 * time.Second))
 	})
 }
 
 func (l *Listener) heartbeat(ctx context.Context, conn *websocket.Conn) error {
 	ticker := time.NewTicker(30 * time.Second)
+
 	defer ticker.Stop()
 
 	for {
@@ -131,15 +141,18 @@ func (l *Listener) heartbeat(ctx context.Context, conn *websocket.Conn) error {
 				time.Now().Add(time.Second),
 			)
 			l.connMu.Unlock()
+
 			return nil
 
 		case <-ticker.C:
 			l.connMu.Lock()
 			err := conn.WriteControl(websocket.PingMessage, nil, time.Now().Add(10*time.Second))
+			
 			l.connMu.Unlock()
 
 			if err != nil {
-				slog.Debug("Falha ao enviar ping", "error", err)
+				slog.Debug("Ping failed", "error", err)
+
 				return err
 			}
 		}
@@ -148,10 +161,12 @@ func (l *Listener) heartbeat(ctx context.Context, conn *websocket.Conn) error {
 
 func (l *Listener) logWebhook(message []byte) {
 	var webhook Message
-	slog.Info("Webhook recebido", "size_bytes", len(message))
+
+	slog.Info("Webhook received", "size_bytes", len(message))
 
 	if err := json.Unmarshal(message, &webhook); err != nil {
 		l.logRaw(message)
+
 		return
 	}
 
@@ -165,7 +180,7 @@ func (l *Listener) logWebhook(message []byte) {
 }
 
 func (l *Listener) logRaw(msg []byte) {
-	slog.Info("Webhook recebido (raw)", "size", len(msg))
+	slog.Info("Webhook received (raw)", "size", len(msg))
 
 	l.txLogger.Info("webhook_received_raw",
 		"timestamp", time.Now().Format(time.RFC3339),
@@ -210,7 +225,8 @@ func (l *Listener) forward(ctx context.Context, message []byte) error {
 			"duration_ms", duration.Milliseconds(),
 			"timestamp", time.Now().Format(time.RFC3339),
 		)
-		return fmt.Errorf("falha ao encaminhar: %w", err)
+
+		return fmt.Errorf("failed to forward webhook: %w", err)
 	}
 
 	statusCode := resp.StatusCode()
@@ -223,7 +239,8 @@ func (l *Listener) forward(ctx context.Context, message []byte) error {
 			"response_body", string(resp.Body()),
 			"timestamp", time.Now().Format(time.RFC3339),
 		)
-		return fmt.Errorf("falha ao encaminhar webhook: status %d", statusCode)
+
+		return fmt.Errorf("failed to forward webhook: %w", err)
 	}
 
 	l.txLogger.Info("webhook_forwarded",
@@ -234,7 +251,7 @@ func (l *Listener) forward(ctx context.Context, message []byte) error {
 		"size_bytes", len(message),
 	)
 
-	slog.Debug("Webhook encaminhado",
+	slog.Debug("Webhook forwarded",
 		"status", statusCode,
 		"url", l.forwardURL,
 		"duration_ms", duration.Milliseconds(),

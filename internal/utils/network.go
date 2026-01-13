@@ -10,12 +10,16 @@ import (
 
 func IsOnline() bool {
 	const googleDNS = "8.8.8.8:53"
-	timeout := 2 * time.Second
+	const timeout = 2 * time.Second
+
 	conn, err := net.DialTimeout("tcp", googleDNS, timeout)
+
 	if err != nil {
 		return false
 	}
+
 	defer conn.Close()
+
 	return true
 }
 
@@ -34,7 +38,7 @@ func OpenBrowser(url string) error {
 		cmd = "xdg-open"
 		args = []string{url}
 	default:
-		return fmt.Errorf("sistema operacional não suportado: %s", runtime.GOOS)
+		return fmt.Errorf("unsupported operating system: %s", runtime.GOOS)
 	}
 
 	return exec.Command(cmd, args...).Start()

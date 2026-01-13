@@ -21,8 +21,9 @@ type Config struct {
 
 func DefaultConfig() (*Config, error) {
 	homeDir, err := os.UserHomeDir()
+
 	if err != nil {
-		return nil, fmt.Errorf("falha ao obter diretório home: %w", err)
+		return nil, fmt.Errorf("failed to resolve home directory: %w", err)
 	}
 
 	return &Config{
@@ -37,7 +38,7 @@ func DefaultConfig() (*Config, error) {
 
 func Setup(cfg *Config) (*slog.Logger, error) {
 	if err := os.MkdirAll(cfg.LogDir, 0o755); err != nil {
-		return nil, fmt.Errorf("falha ao criar diretório de logs: %w", err)
+		return nil, fmt.Errorf("failed to create log directory: %w", err)
 	}
 
 	logFile := &lumberjack.Logger{
@@ -70,7 +71,7 @@ func Setup(cfg *Config) (*slog.Logger, error) {
 
 func NewTransactionLogger(cfg *Config) (*slog.Logger, error) {
 	if err := os.MkdirAll(cfg.LogDir, 0o755); err != nil {
-		return nil, fmt.Errorf("falha ao criar diretório de logs: %w", err)
+		return nil, fmt.Errorf("failed to create log directory: %w", err)
 	}
 
 	logFile := &lumberjack.Logger{

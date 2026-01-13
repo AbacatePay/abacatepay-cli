@@ -10,7 +10,7 @@ import (
 
 var statusCmd = &cobra.Command{
 	Use:   "status",
-	Short: "Verificar status da autenticação",
+	Short: "Check authentication status",
 	RunE: func(cmd *cobra.Command, args []string) error {
 		return getAuthStatus()
 	},
@@ -24,17 +24,21 @@ func getAuthStatus() error {
 	deps := utils.SetupDependencies(Local, Verbose)
 
 	activeProfile, err := deps.Store.GetActiveProfile()
+
 	if err != nil || activeProfile == "" {
-		slog.Info("Não autenticado (nenhum perfil ativo)")
+		slog.Info("Not signed in")
+
 		return nil
 	}
 
 	token, err := deps.Store.GetNamed(activeProfile)
 	if err != nil || token == "" {
-		slog.Info("Não autenticado", "profile", activeProfile)
+		slog.Info("Not signed in", "profile", activeProfile)
+
 		return nil
 	}
 
-	slog.Info("Autenticado", "profile", activeProfile)
+	slog.Info("Signed in", "profile", activeProfile)
+
 	return nil
 }

@@ -14,7 +14,7 @@ import (
 
 var listenCmd = &cobra.Command{
 	Use:   "listen",
-	Short: "Escutar webhooks e encaminhar para servidor local",
+	Short: "Listen for webhooks and forward them to your local app",
 	RunE: func(cmd *cobra.Command, args []string) error {
 		return listen()
 	},
@@ -23,7 +23,7 @@ var listenCmd = &cobra.Command{
 var forwardURL string
 
 func init() {
-	listenCmd.Flags().StringVar(&forwardURL, "forward-to", "http://localhost:3000/webhooks/abacatepay", "URL local para ouvir eventos")
+	listenCmd.Flags().StringVar(&forwardURL, "forward-to", "http://localhost:3000/webhooks/abacatepay", "Where incoming events should be sent")
 
 	rootCmd.AddCommand(listenCmd)
 }
@@ -32,13 +32,15 @@ func listen() error {
 	deps := utils.SetupDependencies(Local, Verbose)
 
 	activeProfile, err := deps.Store.GetActiveProfile()
+
 	if err != nil || activeProfile == "" {
-		return fmt.Errorf("não autenticado. Execute 'abacatepay-cli login' primeiro")
+		return fmt.Errorf("you’re not logged in — run `abacatepay login` to continue")
 	}
 
 	token, err := deps.Store.GetNamed(activeProfile)
+
 	if err != nil || token == "" {
-		return fmt.Errorf("token não encontrado para o perfil %s. Por favor, faça login novamente", activeProfile)
+		return fmt.Errorf("this profile doesn’t have a valid token — try logging in again")
 	}
 
 	if forwardURL == "" || forwardURL == "http://localhost:3000/webhooks/abacatepay" {
@@ -46,6 +48,7 @@ func listen() error {
 	}
 
 	ctx, cancel := signal.NotifyContext(context.Background(), os.Interrupt, syscall.SIGTERM)
+
 	defer cancel()
 
 	params := &utils.StartListenerParams{
@@ -57,11 +60,16 @@ func listen() error {
 		Version:    rootCmd.Version,
 	}
 	if err := utils.StartListener(params); err != nil {
-		return fmt.Errorf("error to start listener: %w", err)
+		return fmt.Errorf("couldn’t start the webhook listener: %w", err)
 	}
 
-	fmt.Println("Pressione Ctrl+C para parar")
-	fmt.Println()
+	fmt.Printf("Forwarding events to %s\n\n", forwardURL)
+	fmt.Println("Press Ctrl+C to stop")
+
+	go func() {
+		<-ctx.Done()
+		fmt.Println("\nListener stopped")
+	}()
 
 	return nil
 }

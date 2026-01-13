@@ -11,7 +11,7 @@ import (
 
 var whoamiCmd = &cobra.Command{
 	Use:   "whoami",
-	Short: "Exibir o perfil atual e status de autenticação",
+	Short: "Show the current profile",
 	RunE: func(cmd *cobra.Command, args []string) error {
 		return whoami()
 	},
@@ -23,27 +23,28 @@ func init() {
 
 func whoami() error {
 	deps := utils.SetupDependencies(Local, Verbose)
+
 	activeProfile, err := deps.Store.GetActiveProfile()
 
 	if err != nil || activeProfile == "" {
-		return fmt.Errorf("nenhum perfil ativo encontrado. Por favor, faça login primeiro")
+		return fmt.Errorf("you’re not signed in")
 	}
 
 	token, err := deps.Store.GetNamed(activeProfile)
 
 	if err != nil || token == "" {
-		return fmt.Errorf("token não encontrado para o perfil ativo: %s", activeProfile)
+		return fmt.Errorf("this profile doesn’t have a valid session", activeProfile)
 	}
 
 	user, err := auth.ValidateToken(deps.Client, deps.Config.APIBaseURL, token)
 	if err != nil {
-		return fmt.Errorf("sessão expirada para o perfil %s: %w", activeProfile, err)
+		return fmt.Errorf("session expired for %s — please sign in again", activeProfile)
 	}
 
-	fmt.Printf("● Perfil Ativo: %s\n", activeProfile)
-	fmt.Printf("● Usuário:      %s\n", user.Name)
-	fmt.Printf("● Email:        %s\n", user.Email)
-	fmt.Printf("● Status:       Autenticado ✅\n")
+	fmt.Printf("Profile: %s\n", activeProfile)
+	fmt.Printf("User:    %s\n", user.Name)
+	fmt.Printf("Email:   %s\n", user.Email)
+	fmt.Printf("Status:  Signed in ✓\n")
 
 	return nil
 }
