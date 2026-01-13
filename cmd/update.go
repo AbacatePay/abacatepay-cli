@@ -13,7 +13,7 @@ import (
 
 var updateCmd = &cobra.Command{
 	Use:   "update",
-	Short: "Update CLI to new version if is available",
+	Short: "Update CLI to new version if it is available",
 	RunE: func(cmd *cobra.Command, args []string) error {
 		return update()
 	},
@@ -27,23 +27,26 @@ func update() error {
 	ctx := context.Background()
 
 	latest, found, err := utils.CheckUpdate(ctx, rootCmd.Version)
+
 	if err != nil {
-		return fmt.Errorf("erro ao verificar atualizações: %w", err)
+		return fmt.Errorf("couldn’t check for updates: %w", err)
 	}
 
 	if !found {
-		fmt.Printf("Você já está na versão mais recente (%s)\n", rootCmd.Version)
+		fmt.Printf("You’re already on the latest version (%s)\n", rootCmd.Version)
 		return nil
 	}
 
-	fmt.Printf("Nova versão encontrada: %s\n", latest.Version())
-	fmt.Println("Baixando e instalando atualização...")
+	fmt.Printf("Update available: %s\n", latest.Version())
+	fmt.Println("Downloading and installing...")
 
 	exe, _ := os.Executable()
+
 	if err := selfupdate.UpdateTo(ctx, latest.AssetURL, latest.AssetName, exe); err != nil {
-		return fmt.Errorf("erro ao atualizar: %w", err)
+		return fmt.Errorf("update failed: %w", err)
 	}
 
-	fmt.Println("Atualizado com sucesso!")
+	fmt.Println("Update complete ✨")
+
 	return nil
 }

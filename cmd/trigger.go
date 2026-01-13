@@ -9,8 +9,9 @@ import (
 )
 
 var triggerCmd = &cobra.Command{
-	Use:   "trigger",
-	Short: "trigger a event",
+	Use:   "trigger <event>",
+	Args:  cobra.MinimumNArgs(1),
+	Short: "Trigger test events",
 	RunE: func(cmd *cobra.Command, args []string) error {
 		return trigger(args)
 	},
@@ -22,16 +23,12 @@ func init() {
 
 func trigger(args []string) error {
 	if !utils.IsOnline() {
-		return fmt.Errorf("you're offline, please stabilish your connection to continue")
-	}
-
-	if len(args) == 0 {
-		return fmt.Errorf("please add a event to be triggered")
+		return fmt.Errorf("you’re offline — check your connection and try again")
 	}
 
 	for _, evt := range args {
 		if r := isEvent(evt); !r {
-			return fmt.Errorf("please add a valid event to be triggered, we have: billing.paid, withdraw.done and withdraw.failed")
+			return fmt.Errorf("unknown event '%s'. Available events: billing.paid, withdraw.done, withdraw.failed")
 		}
 	}
 

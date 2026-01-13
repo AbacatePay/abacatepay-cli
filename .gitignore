@@ -1,9 +1,8 @@
 # Completion
-abacatepay-cli-completion.bash
-abacatepay-cli-completion.zsh
+abacatepay-completion.bash
+abacatepay-completion.zsh
 
 # Go binaries
-abacatepay-cli
 abacate*
 
 *.exe

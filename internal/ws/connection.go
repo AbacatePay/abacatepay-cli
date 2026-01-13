@@ -31,11 +31,15 @@ func ConnectWithRetry(ctx context.Context, cfg Config, handler Handler) error {
 		default:
 		}
 
-		slog.Debug("Tentando conectar...", "url", cfg.URL)
+		slog.Debug("Connecting...", "url", cfg.URL)
 
 		conn, _, err := websocket.DefaultDialer.DialContext(ctx, cfg.URL, cfg.Headers)
 		if err != nil {
-			slog.Error("Falha na conexão. Retentando...", "error", err, "wait_time", backoff)
+			slog.Warn(
+				"Connection failed, retrying…",
+				"error", err,
+				"backoff", backoff,
+			)
 
 			select {
 			case <-ctx.Done():
@@ -51,11 +55,12 @@ func ConnectWithRetry(ctx context.Context, cfg Config, handler Handler) error {
 			}
 		}
 
-		slog.Info("Conectado ao servidor WebSocket")
+		slog.Info("WebSocket connected")
+
 		backoff = cfg.MinBackoff
 
 		if err := handler(ctx, conn); err != nil {
-			slog.Warn("Conexão interrompida", "error", err)
+			slog.Warn("Connection lost", "error", err)
 		}
 
 		conn.Close()

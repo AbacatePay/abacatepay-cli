@@ -38,30 +38,34 @@ func StartListener(params *StartListenerParams) error {
 	go ShowUpdate(params.Version)
 
 	activeProfile, err := params.Store.GetActiveProfile()
+
 	if err != nil || activeProfile == "" {
-		return fmt.Errorf("nenhum perfil ativo encontrado")
+		return fmt.Errorf("no active profile found")
 	}
 
 	token, err := params.Store.GetNamed(activeProfile)
+
 	if err != nil || token == "" {
-		return fmt.Errorf("erro ao recuperar token do perfil %s: %w", activeProfile, err)
+		return fmt.Errorf("couldn’t load token for profile '%s'", activeProfile)
 	}
 
 	logCfg, err := logger.DefaultConfig()
+
 	if err != nil {
-		return fmt.Errorf("erro ao configurar logger: %w", err)
+		return fmt.Errorf("failed to configure logger: %w", err)
 	}
 
 	txLogger, err := logger.NewTransactionLogger(logCfg)
+
 	if err != nil {
-		return fmt.Errorf("erro ao criar logger de transações: %w", err)
+		return fmt.Errorf("failed to initialize transaction logger: %w", err)
 	}
 
 	listener := webhook.NewListener(params.Config, params.Client, params.ForwardURL, token, txLogger)
 
 	fmt.Fprintln(os.Stderr)
-	slog.Info("Iniciando escuta de webhooks...", "forward_url", params.ForwardURL)
-	fmt.Fprintln(os.Stderr, "Pressione Ctrl+C para parar")
+	slog.Info("Listening for webhooks", "forward_to", params.ForwardURL)
+	fmt.Fprintln(os.Stderr, "Press Ctrl+C to stop")
 	fmt.Fprintln(os.Stderr)
 
 	return listener.Listen(params.Context)
@@ -71,6 +75,7 @@ func GetConfig(local bool) *config.Config {
 	if local {
 		return config.Local()
 	}
+
 	return config.Default()
 }
 
@@ -81,13 +86,16 @@ func GetStore(cfg *config.Config) auth.TokenStore {
 func PromptForURL(defaultURL string) string {
 	reader := bufio.NewReader(os.Stdin)
 
-	fmt.Fprintf(os.Stderr, "\nURL para encaminhar webhooks [%s]: ", defaultURL)
+	fmt.Fprintf(os.Stderr, "\nForward events to [%s]: ", defaultURL)
+
 	input, err := reader.ReadString('\n')
+
 	if err != nil {
 		return defaultURL
 	}
 
 	input = strings.TrimSpace(input)
+
 	if input == "" {
 		return defaultURL
 	}
@@ -112,6 +120,7 @@ func SetupDependencies(local bool, verbose bool) *Dependencies {
 func CheckUpdate(ctx context.Context, currentVersion string) (*selfupdate.Release, bool, error) {
 	slug := "AbacatePay/abacatepay-cli"
 	latest, found, err := selfupdate.DetectLatest(ctx, selfupdate.ParseSlug(slug))
+
 	if err != nil {
 		return nil, false, err
 	}
@@ -125,6 +134,7 @@ func CheckUpdate(ctx context.Context, currentVersion string) (*selfupdate.Releas
 
 func ShowUpdate(currentVersion string) {
 	latest, found, _ := CheckUpdate(context.Background(), currentVersion)
+
 	if !found {
 		return
 	}
@@ -154,11 +164,11 @@ func ShowUpdate(currentVersion string) {
 	)
 
 	msg := fmt.Sprintf(
-		"🥑 %s %s\n      Atual: %s\n\n   Para atualizar execute:\n   %s",
-		titleStyle.Render("Nova versão disponível:"),
+		"🥑 %s %s\n      Current: %s\n\n   To update, run:\n   %s",
+		titleStyle.Render("Update available:"),
 		versionStyle.Render(latest.Version()),
 		currentVersion,
-		commandStyle.Render("abacatepay-cli update"),
+		commandStyle.Render("abacatepay update"),
 	)
 
 	fmt.Fprintln(os.Stderr, boxStyle.Render(msg))

@@ -20,25 +20,33 @@ type UserResponse struct {
 
 func ValidateToken(client *resty.Client, baseURL, token string) (*UserData, error) {
 	var result UserResponse
+
 	resp, err := client.R().
 		SetHeader("Authorization", "Bearer "+token).
 		SetResult(&result).
 		Get(baseURL + "/v1/customer/get")
+
 	if err != nil {
-		return nil, fmt.Errorf("falha ao conectar com a API: %w", err)
+		return nil, fmt.Errorf("failed to reach API: %w", err)
 	}
 
 	if resp.StatusCode() != http.StatusOK {
 
 		if resp.StatusCode() == http.StatusNotFound {
-			slog.Warn("API de perfil retornou 404. Usando perfil Mock para testes locais.")
+			slog.Warn("Profile endpoint returned 404, using mock user...")
+
 			return &UserData{
 				ID:    "mock-id",
 				Name:  "Abacate Tester",
 				Email: "test@abacatepay.com",
 			}, nil
 		}
-		return nil, fmt.Errorf("token inválido ou expirado (status %d) ao acessar %s", resp.StatusCode(), baseURL+"/v1/customer/get")
+
+		return nil, fmt.Errorf(
+			"invalid or expired token (status %d)",
+			resp.StatusCode(),
+		)
+
 	}
 
 	return &result.Data, nil
