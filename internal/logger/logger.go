@@ -1,8 +1,8 @@
 package logger
 
 import (
+	"context"
 	"fmt"
-	"io"
 	"log/slog"
 	"os"
 	"path/filepath"
@@ -36,7 +36,7 @@ func DefaultConfig() (*Config, error) {
 }
 
 func Setup(cfg *Config) (*slog.Logger, error) {
-	if err := os.MkdirAll(cfg.LogDir, 0755); err != nil {
+	if err := os.MkdirAll(cfg.LogDir, 0o755); err != nil {
 		return nil, fmt.Errorf("falha ao criar diretório de logs: %w", err)
 	}
 
@@ -48,23 +48,28 @@ func Setup(cfg *Config) (*slog.Logger, error) {
 		Compress:   cfg.Compress,
 	}
 
-	multiWriter := io.MultiWriter(os.Stderr, logFile)
+	fileHandler := slog.NewJSONHandler(logFile, &slog.HandlerOptions{Level: cfg.Level})
 
-	handler := slog.NewJSONHandler(multiWriter, &slog.HandlerOptions{
+	consoleHandler := slog.NewTextHandler(os.Stderr, &slog.HandlerOptions{
 		Level: cfg.Level,
 		ReplaceAttr: func(groups []string, a slog.Attr) slog.Attr {
+			if a.Key == slog.TimeKey && len(groups) == 0 {
+				return slog.Attr{}
+			}
 			return a
 		},
 	})
 
-	logger := slog.New(handler)
+	multiHandler := NewFanoutHandler(consoleHandler, fileHandler)
+
+	logger := slog.New(multiHandler)
 	slog.SetDefault(logger)
 
 	return logger, nil
 }
 
 func NewTransactionLogger(cfg *Config) (*slog.Logger, error) {
-	if err := os.MkdirAll(cfg.LogDir, 0755); err != nil {
+	if err := os.MkdirAll(cfg.LogDir, 0o755); err != nil {
 		return nil, fmt.Errorf("falha ao criar diretório de logs: %w", err)
 	}
 
@@ -88,4 +93,46 @@ func NewConsoleLogger(level slog.Level) *slog.Logger {
 		Level: level,
 	})
 	return slog.New(handler)
+}
+
+type FanoutHandler struct {
+	handlers []slog.Handler
+}
+
+func NewFanoutHandler(handlers ...slog.Handler) *FanoutHandler {
+	return &FanoutHandler{handlers: handlers}
+}
+
+func (h *FanoutHandler) Enabled(ctx context.Context, level slog.Level) bool {
+	for _, handler := range h.handlers {
+		if handler.Enabled(ctx, level) {
+			return true
+		}
+	}
+	return false
+}
+
+func (h *FanoutHandler) Handle(ctx context.Context, r slog.Record) error {
+	for _, handler := range h.handlers {
+		if handler.Enabled(ctx, r.Level) {
+			_ = handler.Handle(ctx, r.Clone())
+		}
+	}
+	return nil
+}
+
+func (h *FanoutHandler) WithAttrs(attrs []slog.Attr) slog.Handler {
+	handlers := make([]slog.Handler, len(h.handlers))
+	for i, handler := range h.handlers {
+		handlers[i] = handler.WithAttrs(attrs)
+	}
+	return NewFanoutHandler(handlers...)
+}
+
+func (h *FanoutHandler) WithGroup(name string) slog.Handler {
+	handlers := make([]slog.Handler, len(h.handlers))
+	for i, handler := range h.handlers {
+		handlers[i] = handler.WithGroup(name)
+	}
+	return NewFanoutHandler(handlers...)
 }
