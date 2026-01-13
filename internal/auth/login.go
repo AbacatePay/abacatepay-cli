@@ -8,163 +8,107 @@ import (
 	"os"
 	"time"
 
-		"github.com/briandowns/spinner"
+	"github.com/briandowns/spinner"
 
-		"github.com/go-resty/resty/v2"
+	"github.com/go-resty/resty/v2"
 
-	
+	"abacatepay-cli/internal/config"
+)
 
-		"abacatepay-cli/internal/config"
+type DeviceLoginResponse struct {
+	VerificationURI string `json:"verificationUri"`
 
-	)
+	DeviceCode string `json:"deviceCode"`
+}
 
-	
+type TokenResponse struct {
+	Token string `json:"token"`
+}
 
-	type DeviceLoginResponse struct {
+type LoginParams struct {
+	Config      *config.Config
+	Client      *resty.Client
+	Store       TokenStore
+	Context     context.Context
+	APIKey      string
+	ProfileName string
+	OpenBrowser func(string) error
+}
 
-		VerificationURI string `json:"verificationUri"`
+func Login(params *LoginParams) error {
+	profile := params.ProfileName
 
-		DeviceCode      string `json:"deviceCode"`
-
+	if profile == "" {
+		profile = fmt.Sprintf("profile-%d", time.Now().Unix()%10000)
 	}
 
-	
-
-	type TokenResponse struct {
-
-		Token string `json:"token"`
-
-	}
-
-	
-
-	type LoginParams struct {
-
-		Config      *config.Config
-
-		Client      *resty.Client
-
-		Store       TokenStore
-
-		Context     context.Context
-
-		APIKey      string
-
-		ProfileName string
-
-	}
-
-	
-
-	func Login(params *LoginParams) error {
-
-		profile := params.ProfileName
-
-		if profile == "" {
-
-			profile = fmt.Sprintf("profile-%d", time.Now().Unix()%10000)
-
-		}
-
-	
-
-		if params.APIKey != "" {
-
-			user, err := ValidateToken(params.Client, params.Config.APIBaseURL, params.APIKey)
-
-			if err != nil {
-
-				return err
-
-			}
-
-	
-
-			if err := params.Store.SaveNamed(profile, params.APIKey); err != nil {
-
-				return fmt.Errorf("falha ao salvar API Key: %w", err)
-
-			}
-
-	
-
-			if err := params.Store.SetActiveProfile(profile); err != nil {
-
-				return fmt.Errorf("falha ao definir perfil ativo: %w", err)
-
-			}
-
-	
-
-			fmt.Printf("Bem-vindo, %s! API Key salva no perfil: %s\n", user.Name, profile)
-
-			return nil
-
-		}
-
-	
-
-		host, err := os.Hostname()
+	if params.APIKey != "" {
+		user, err := ValidateToken(params.Client, params.Config.APIBaseURL, params.APIKey)
 
 		if err != nil {
-
-			host = "unknown"
-
+			return err
 		}
 
-	
-
-		var result DeviceLoginResponse
-
-		resp, err := params.Client.R().
-
-			SetContext(params.Context).
-
-			SetBody(map[string]string{"host": host}).
-
-			SetResult(&result).
-
-			Post(params.Config.APIBaseURL + "/device-login")
-
-		if err != nil {
-
-			return fmt.Errorf("falha na requisição de login: %w", err)
-
+		if err := params.Store.SaveNamed(profile, params.APIKey); err != nil {
+			return fmt.Errorf("falha ao salvar API Key: %w", err)
 		}
 
-	
-
-		if resp.StatusCode() != http.StatusOK {
-
-			return fmt.Errorf("login falhou com status %d", resp.StatusCode())
-
+		if err := params.Store.SetActiveProfile(profile); err != nil {
+			return fmt.Errorf("falha ao definir perfil ativo: %w", err)
 		}
 
-	
+		fmt.Printf("Bem-vindo, %s! API Key salva no perfil: %s\n", user.Name, profile)
+		return nil
 
-		fmt.Println("Abra o seguinte link no navegador para autenticar:")
+	}
 
+	host, err := os.Hostname()
+	if err != nil {
+		host = "unknown"
+	}
+
+	var result DeviceLoginResponse
+
+	resp, err := params.Client.R().
+		SetContext(params.Context).
+		SetBody(map[string]string{"host": host}).
+		SetResult(&result).
+		Post(params.Config.APIBaseURL + "/device-login")
+
+	if err != nil {
+		return fmt.Errorf("falha na requisição de login: %w", err)
+	}
+
+	if resp.StatusCode() != http.StatusOK {
+		return fmt.Errorf("login falhou com status %d", resp.StatusCode())
+	}
+
+	tryOpen := func() bool {
+		if params.OpenBrowser == nil {
+			return false
+		}
+		if err := params.OpenBrowser(result.VerificationURI); err != nil {
+			slog.Debug("Não foi possível abrir o navegador automaticamente", "error", err)
+			return false
+		}
+		fmt.Printf("Tentando abrir o navegador em: %s\n", result.VerificationURI)
+		return true
+	}
+
+	if !tryOpen() {
+		fmt.Println("Por favor, abra o seguinte link no navegador para autenticar:")
 		fmt.Printf("%s\n", result.VerificationURI)
+	}
 
-	
+	token, err := pollForToken(params.Context, params.Config, params.Client, result.DeviceCode)
+	if err != nil {
+		return err
+	}
 
-		token, err := pollForToken(params.Context, params.Config, params.Client, result.DeviceCode)
-
-		if err != nil {
-
-			return err
-
-		}
-
-	
-
-		user, err := ValidateToken(params.Client, params.Config.APIBaseURL, token)
-
-		if err != nil {
-
-			return err
-
-		}
+	user, err := ValidateToken(params.Client, params.Config.APIBaseURL, token)
+	if err != nil {
+		return err
+	}
 
 	if err := params.Store.SaveNamed(profile, token); err != nil {
 		return fmt.Errorf("falha ao salvar token: %w", err)
