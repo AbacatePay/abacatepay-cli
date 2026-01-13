@@ -1,6 +1,3 @@
-abacate
-abacatepay-cli
-
 # Logs
 logs
 *.log
@@ -132,9 +129,13 @@ dist
 .yarn/install-state.gz
 .pnp.*
 
+# Completion
+abacatepay-cli-completion.bash
+abacatepay-cli-completion.zsh
+
 # Go binaries
 abacatepay-cli
-abacate
+abacate*
 
 *.exe
 *.exe~
