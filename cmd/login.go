@@ -23,8 +23,8 @@ var loginCmd = &cobra.Command{
 var name, key string
 
 func init() {
-	// loginCmd.Flags().StringVar(&key, "key", "", "Abacate Pay's API Key")
-	// loginCmd.Flags().StringVar(&name, "name", "", "Name for the profile (Min 3, Max 50 chars.)")
+	loginCmd.Flags().StringVar(&key, "key", "", "Abacate Pay's API Key")
+	loginCmd.Flags().StringVar(&name, "name", "", "Abacate Pay's Profile Name")
 
 	rootCmd.AddCommand(loginCmd)
 }
@@ -36,10 +36,12 @@ func login() error {
 	defer cancel()
 
 	params := &auth.LoginParams{
-		Config:  deps.Config,
-		Client:  deps.Client,
-		Store:   deps.Store,
-		Context: ctx,
+		Config:      deps.Config,
+		Client:      deps.Client,
+		Store:       deps.Store,
+		Context:     ctx,
+		APIKey:      key,
+		ProfileName: name,
 	}
 
 	if err := auth.Login(params); err != nil {

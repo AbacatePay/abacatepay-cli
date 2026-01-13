@@ -9,8 +9,13 @@ import (
 
 type TokenStore interface {
 	Save(token string) error
+	SaveNamed(name, token string) error
 	Get() (string, error)
+	GetNamed(name string) (string, error)
 	Delete() error
+	DeleteNamed(name string) error
+	SetActiveProfile(name string) error
+	GetActiveProfile() (string, error)
 }
 
 type KeyringStore struct {
@@ -40,69 +45,69 @@ func (k *KeyringStore) getKeyring() (keyring.Keyring, error) {
 }
 
 func (k *KeyringStore) Save(token string) error {
+	return k.SaveNamed(k.tokenKey, token)
+}
+
+func (k *KeyringStore) SaveNamed(name, token string) error {
 	ring, err := k.getKeyring()
 	if err != nil {
 		return fmt.Errorf("falha ao abrir keyring: %w", err)
 	}
 
 	if err := ring.Set(keyring.Item{
-		Key:  k.tokenKey,
+		Key:  name,
 		Data: []byte(token),
 	}); err != nil {
-		return fmt.Errorf("falha ao salvar token: %w", err)
+		return fmt.Errorf("falha ao salvar no keyring: %w", err)
 	}
 
 	return nil
 }
 
 func (k *KeyringStore) Get() (string, error) {
+	return k.GetNamed(k.tokenKey)
+}
+
+func (k *KeyringStore) GetNamed(name string) (string, error) {
 	ring, err := k.getKeyring()
 	if err != nil {
 		return "", fmt.Errorf("falha ao abrir keyring: %w", err)
 	}
 
-	item, err := ring.Get(k.tokenKey)
+	item, err := ring.Get(name)
 	if err != nil {
 		if err == keyring.ErrKeyNotFound {
 			return "", nil
 		}
-		return "", fmt.Errorf("falha ao recuperar token: %w", err)
+		return "", fmt.Errorf("falha ao recuperar do keyring: %w", err)
 	}
 
 	return string(item.Data), nil
 }
 
 func (k *KeyringStore) Delete() error {
+	return k.DeleteNamed(k.tokenKey)
+}
+
+func (k *KeyringStore) DeleteNamed(name string) error {
 	ring, err := k.getKeyring()
 	if err != nil {
 		return fmt.Errorf("falha ao abrir keyring: %w", err)
 	}
 
-	if err := ring.Remove(k.tokenKey); err != nil && err != keyring.ErrKeyNotFound {
-		return fmt.Errorf("falha ao remover token: %w", err)
+	if err := ring.Remove(name); err != nil && err != keyring.ErrKeyNotFound {
+		return fmt.Errorf("falha ao remover do keyring: %w", err)
 	}
 
 	return nil
 }
 
-type MemoryStore struct {
-	token string
+const activeProfileKey = "active-profile-name"
+
+func (k *KeyringStore) SetActiveProfile(name string) error {
+	return k.SaveNamed(activeProfileKey, name)
 }
 
-func NewMemoryStore() *MemoryStore {
-	return &MemoryStore{}
-}
-
-func (m *MemoryStore) Save(token string) error {
-	m.token = token
-	return nil
-}
-
-func (m *MemoryStore) Get() (string, error) {
-	return m.token, nil
-}
-
-func (m *MemoryStore) Delete() error {
-	m.token = ""
-	return nil
+func (k *KeyringStore) GetActiveProfile() (string, error) {
+	return k.GetNamed(activeProfileKey)
 }

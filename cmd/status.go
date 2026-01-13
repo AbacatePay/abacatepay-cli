@@ -1,7 +1,6 @@
 package cmd
 
 import (
-	"fmt"
 	"log/slog"
 
 	"abacatepay-cli/internal/utils"
@@ -24,18 +23,18 @@ func init() {
 func getAuthStatus() error {
 	deps := utils.SetupDependencies(Local, Verbose)
 
-	token, err := deps.Store.Get()
-	if err != nil {
-		return err
-	}
-
-	if token != "" {
-		slog.Info("Autenticado")
+	activeProfile, err := deps.Store.GetActiveProfile()
+	if err != nil || activeProfile == "" {
+		slog.Info("Não autenticado (nenhum perfil ativo)")
 		return nil
 	}
 
-	slog.Info("Não autenticado")
-	fmt.Println("\nExecute 'abacatepay-cli login' para autenticar")
+	token, err := deps.Store.GetNamed(activeProfile)
+	if err != nil || token == "" {
+		slog.Info("Não autenticado", "profile", activeProfile)
+		return nil
+	}
 
+	slog.Info("Autenticado", "profile", activeProfile)
 	return nil
 }

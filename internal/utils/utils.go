@@ -37,9 +37,14 @@ type Dependencies struct {
 func StartListener(params *StartListenerParams) error {
 	go ShowUpdate(params.Version)
 
-	token, err := params.Store.Get()
-	if err != nil {
-		return fmt.Errorf("erro ao recuperar token: %w", err)
+	activeProfile, err := params.Store.GetActiveProfile()
+	if err != nil || activeProfile == "" {
+		return fmt.Errorf("nenhum perfil ativo encontrado")
+	}
+
+	token, err := params.Store.GetNamed(activeProfile)
+	if err != nil || token == "" {
+		return fmt.Errorf("erro ao recuperar token do perfil %s: %w", activeProfile, err)
 	}
 
 	logCfg, err := logger.DefaultConfig()
@@ -124,32 +129,30 @@ func ShowUpdate(currentVersion string) {
 		return
 	}
 
-	// Estilos do Lipgloss
 	var (
-		primaryColor = lipgloss.Color("#25D366") // Verde Abacate
-		yellowColor  = lipgloss.Color("#FFFF00") // Amarelo Destaque
+		primaryColor = lipgloss.Color("#25D366")
+		yellowColor  = lipgloss.Color("#FFFF00")
 
 		boxStyle = lipgloss.NewStyle().
-			BorderStyle(lipgloss.RoundedBorder()).
-			BorderForeground(primaryColor).
-			Padding(1, 2).
-			MarginTop(1).
-			MarginBottom(1)
+				BorderStyle(lipgloss.RoundedBorder()).
+				BorderForeground(primaryColor).
+				Padding(1, 2).
+				MarginTop(1).
+				MarginBottom(1)
 
 		titleStyle = lipgloss.NewStyle().
-			Foreground(primaryColor).
-			Bold(true)
+				Foreground(primaryColor).
+				Bold(true)
 
 		versionStyle = lipgloss.NewStyle().
-			Foreground(yellowColor).
-			Bold(true)
+				Foreground(yellowColor).
+				Bold(true)
 
 		commandStyle = lipgloss.NewStyle().
-			Foreground(primaryColor).
-			Bold(true)
+				Foreground(primaryColor).
+				Bold(true)
 	)
 
-	// Construção da mensagem
 	msg := fmt.Sprintf(
 		"🥑 %s %s\n      Atual: %s\n\n   Para atualizar execute:\n   %s",
 		titleStyle.Render("Nova versão disponível:"),
