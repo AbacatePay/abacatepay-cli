@@ -5,6 +5,7 @@ import (
 	"context"
 	"fmt"
 	"log/slog"
+	"math/rand"
 	"os"
 	"strings"
 
@@ -50,13 +51,11 @@ func StartListener(params *StartListenerParams) error {
 	}
 
 	logCfg, err := logger.DefaultConfig()
-
 	if err != nil {
 		return fmt.Errorf("failed to configure logger: %w", err)
 	}
 
 	txLogger, err := logger.NewTransactionLogger(logCfg)
-
 	if err != nil {
 		return fmt.Errorf("failed to initialize transaction logger: %w", err)
 	}
@@ -89,7 +88,6 @@ func PromptForURL(defaultURL string) string {
 	fmt.Fprintf(os.Stderr, "\nForward events to [%s]: ", defaultURL)
 
 	input, err := reader.ReadString('\n')
-
 	if err != nil {
 		return defaultURL
 	}
@@ -120,7 +118,6 @@ func SetupDependencies(local bool, verbose bool) *Dependencies {
 func CheckUpdate(ctx context.Context, currentVersion string) (*selfupdate.Release, bool, error) {
 	slug := "AbacatePay/abacatepay-cli"
 	latest, found, err := selfupdate.DetectLatest(ctx, selfupdate.ParseSlug(slug))
-
 	if err != nil {
 		return nil, false, err
 	}
@@ -172,4 +169,40 @@ func ShowUpdate(currentVersion string) {
 	)
 
 	fmt.Fprintln(os.Stderr, boxStyle.Render(msg))
+}
+
+func GenerateValidCPF(r *rand.Rand) string {
+	digits := make([]int, 11)
+	for i := 0; i < 9; i++ {
+		digits[i] = r.Intn(10)
+	}
+
+	sum := 0
+	for i := 0; i < 9; i++ {
+		sum += digits[i] * (10 - i)
+	}
+	remainder := (sum * 10) % 11
+	if remainder == 10 || remainder == 11 {
+		digits[9] = 0
+	} else {
+		digits[9] = remainder
+	}
+
+	sum = 0
+	for i := 0; i < 10; i++ {
+		sum += digits[i] * (11 - i)
+	}
+
+	remainder = (sum * 10) % 11
+	if remainder == 10 || remainder == 11 {
+		digits[10] = 0
+	} else {
+		digits[10] = remainder
+	}
+
+	cpf := ""
+	for _, d := range digits {
+		cpf += fmt.Sprintf("%d", d)
+	}
+	return cpf
 }

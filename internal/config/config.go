@@ -18,7 +18,7 @@ type Config struct {
 
 func Default() *Config {
 	return &Config{
-		APIBaseURL:        "https://api.abacatepay.com",
+		APIBaseURL:        "https://api.abacatepay.com/v1",
 		WebSocketBaseURL:  "wss://ws.abacatepay.com/ws",
 		PollInterval:      2 * time.Second,
 		MaxRetries:        30,
