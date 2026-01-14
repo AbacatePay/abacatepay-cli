@@ -8,8 +8,9 @@ import (
 )
 
 var logoutCmd = &cobra.Command{
-	Use:   "logout",
-	Short: "Sign out of AbacatePay",
+	Use:     "logout",
+	Aliases: []string{"signout"},
+	Short:   "Sign out of AbacatePay",
 	RunE: func(cmd *cobra.Command, args []string) error {
 		return logout()
 	},

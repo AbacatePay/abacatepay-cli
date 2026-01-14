@@ -14,8 +14,9 @@ import (
 )
 
 var loginCmd = &cobra.Command{
-	Use:   "login",
-	Short: "Sign in to AbacatePay",
+	Use:     "login",
+	Aliases: []string{"signin"},
+	Short:   "Sign in to AbacatePay",
 	RunE: func(cmd *cobra.Command, args []string) error {
 		return login()
 	},

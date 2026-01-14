@@ -9,8 +9,9 @@ import (
 )
 
 var statusCmd = &cobra.Command{
-	Use:   "status",
-	Short: "Check authentication status",
+	Use:     "status",
+	Aliases: []string{"doctor"},
+	Short:   "Check authentication status",
 	RunE: func(cmd *cobra.Command, args []string) error {
 		return getAuthStatus()
 	},

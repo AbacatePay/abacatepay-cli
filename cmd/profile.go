@@ -8,7 +8,7 @@ var profileCmd = &cobra.Command{
 	Use:     "profile",
 	Aliases: []string{"profiles"},
 	Short:   "Manage saved authentication profiles",
-	Long:    "Allows listing, switching, and removing AbacatePay access profiles configured on this machine.",
+	Long:    "Allows listing, switching, and removing AbacatePay access profiles configured on your machine.",
 }
 
 func init() {

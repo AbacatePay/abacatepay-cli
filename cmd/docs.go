@@ -7,8 +7,9 @@ import (
 )
 
 var docsCmd = &cobra.Command{
-	Use:   "docs",
-	Short: "Open the CLI documentation in your browser",
+	Use:     "docs",
+	Aliases: []string{"documentation"},
+	Short:   "Open the CLI documentation in your browser",
 	RunE: func(cmd *cobra.Command, args []string) error {
 		return utils.OpenBrowser("https://docs.abacatepay.com/pages/cli")
 	},

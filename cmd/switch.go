@@ -9,9 +9,10 @@ import (
 )
 
 var switchCmd = &cobra.Command{
-	Use:   "switch",
-	Short: "Switch to another existing profile",
-	Args:  cobra.ExactArgs(1),
+	Use:     "switch",
+	Aliases: []string{"use"},
+	Args:    cobra.ExactArgs(1),
+	Short:   "Switch to another existing profile",
 	RunE: func(cmd *cobra.Command, args []string) error {
 		return switchProfile(args[0])
 	},

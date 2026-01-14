@@ -9,9 +9,9 @@ import (
 
 var deleteProfileCmd = &cobra.Command{
 	Use:     "delete [name]",
-	Aliases: []string{"remove", "rm"},
 	Short:   "Remove a profile",
 	Args:    cobra.ExactArgs(1),
+	Aliases: []string{"remove", "rm"},
 	RunE: func(cmd *cobra.Command, args []string) error {
 		return deleteProfile(args[0])
 	},
