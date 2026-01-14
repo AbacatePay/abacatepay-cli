@@ -29,8 +29,7 @@ func whoami() error {
 		return fmt.Errorf("no active profile found. Please login first")
 	}
 
-
-token, err := deps.Store.GetNamed(activeProfile)
+	token, err := deps.Store.GetNamed(activeProfile)
 
 	if err != nil || token == "" {
 		return fmt.Errorf("token not found for active profile: %s", activeProfile)

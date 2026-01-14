@@ -121,7 +121,7 @@ func (l *Listener) SetupConn(conn *websocket.Conn) {
 		l.connMu.Lock()
 
 		defer l.connMu.Unlock()
-		
+
 		return conn.SetReadDeadline(time.Now().Add(90 * time.Second))
 	})
 }
@@ -147,7 +147,7 @@ func (l *Listener) heartbeat(ctx context.Context, conn *websocket.Conn) error {
 		case <-ticker.C:
 			l.connMu.Lock()
 			err := conn.WriteControl(websocket.PingMessage, nil, time.Now().Add(10*time.Second))
-			
+
 			l.connMu.Unlock()
 
 			if err != nil {

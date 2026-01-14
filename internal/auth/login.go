@@ -16,7 +16,7 @@ import (
 )
 
 type DeviceLoginResponse struct {
-	DeviceCode string `json:"deviceCode"`
+	DeviceCode      string `json:"deviceCode"`
 	VerificationURI string `json:"verificationUri"`
 }
 
@@ -99,9 +99,9 @@ func Login(params *LoginParams) error {
 
 			return false
 		}
-		
+
 		fmt.Printf("Opening browser: %s\n", result.VerificationURI)
-		
+
 		return true
 	}
 
@@ -146,7 +146,7 @@ func Logout(store TokenStore) error {
 	}
 
 	slog.Info("Signed out")
-	
+
 	return nil
 }
 
@@ -155,11 +155,11 @@ func pollForToken(ctx context.Context, cfg *config.Config, client *resty.Client,
 	s.Suffix = "Waiting for authorization..."
 
 	s.Start()
-	
+
 	defer s.Stop()
 
 	ticker := time.NewTicker(cfg.PollInterval)
-	
+
 	defer ticker.Stop()
 
 	for retries := 0; retries < cfg.MaxRetries; retries++ {
@@ -170,13 +170,13 @@ func pollForToken(ctx context.Context, cfg *config.Config, client *resty.Client,
 		}
 
 		var result TokenResponse
-	
+
 		resp, err := client.R().
 			SetContext(ctx).
 			SetBody(map[string]string{"deviceCode": deviceCode}).
 			SetResult(&result).
 			Post(cfg.APIBaseURL + "/token")
-	
+
 		if err != nil {
 			slog.Debug("Token request failed", "error", err)
 
