@@ -10,7 +10,6 @@ import (
 
 func main() {
 	logCfg, err := logger.DefaultConfig()
-	
 	if err != nil {
 		fmt.Fprintf(os.Stderr, "Erro ao configurar logger: %v\n", err)
 

@@ -48,6 +48,11 @@ func Login(params *LoginParams) error {
 			return err
 		}
 
+		existingToken, _ := params.Store.GetNamed(profile)
+		if existingToken != "" {
+			slog.Info("Updating existing profile", "name", profile)
+		}
+
 		if err := params.Store.SaveNamed(profile, params.APIKey); err != nil {
 			return fmt.Errorf("failed to store API key: %w", err)
 		}
@@ -81,7 +86,7 @@ func Login(params *LoginParams) error {
 	}
 
 	if resp.StatusCode() != http.StatusOK {
-		return fmt.Errorf("login failed (status %d: %w", resp.StatusCode())
+		return fmt.Errorf("login failed (status %d)", resp.StatusCode())
 	}
 
 	tryOpen := func() bool {
@@ -115,6 +120,11 @@ func Login(params *LoginParams) error {
 
 	if err != nil {
 		return err
+	}
+
+	existingToken, _ := params.Store.GetNamed(profile)
+	if existingToken != "" {
+		slog.Info("Updating existing profile", "name", profile)
 	}
 
 	if err := params.Store.SaveNamed(profile, token); err != nil {

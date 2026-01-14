@@ -11,16 +11,17 @@ import (
 )
 
 var rootCmd = &cobra.Command{
-	Use:     "abacatepay",
-	Version: version.Version,
-	Short:   "AbacatePay’s developer-first CLI for APIs and local workflows ",
+	Use:           "abacatepay-cli",
+	Short:         "AbacatePay’s developer-first CLI for APIs and local workflows",
+	Version:       version.Version,
+	SilenceUsage:  true,
+	SilenceErrors: true,
 }
-
 var Local, Verbose bool
 
 func Exec() {
-	rootCmd.PersistentFlags().BoolVarP(&Verbose, "verbose", "v", false, "Show debug logs")
-	rootCmd.PersistentFlags().BoolVarP(&Local, "local", "l", false, "Use the sandbox environment")
+	rootCmd.PersistentFlags().BoolVarP(&Verbose, "verbose", "v", false, "Enable verbose logging")
+	rootCmd.PersistentFlags().BoolVarP(&Local, "local", "l", false, "Use test server")
 
 	rootCmd.PersistentPreRun = func(cmd *cobra.Command, args []string) {
 		level := slog.LevelInfo
@@ -30,7 +31,6 @@ func Exec() {
 		}
 
 		cfg, err := logger.DefaultConfig()
-
 		if err != nil {
 			h := slog.NewTextHandler(os.Stderr, &slog.HandlerOptions{Level: level})
 
@@ -48,5 +48,8 @@ func Exec() {
 		}
 	}
 
-	cobra.CheckErr(rootCmd.Execute())
+	if err := rootCmd.Execute(); err != nil {
+		slog.Error(err.Error())
+		os.Exit(1)
+	}
 }
