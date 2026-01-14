@@ -11,12 +11,13 @@ import (
 )
 
 var rootCmd = &cobra.Command{
-	Use:           "abacatepay-cli",
+	Use:           "abacatepay",
 	Short:         "AbacatePay’s developer-first CLI for APIs and local workflows",
 	Version:       version.Version,
 	SilenceUsage:  true,
 	SilenceErrors: true,
 }
+
 var Local, Verbose bool
 
 func Exec() {
