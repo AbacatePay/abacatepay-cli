@@ -2,6 +2,7 @@ package style
 
 import (
 	"fmt"
+	"sort"
 	"strings"
 
 	"github.com/charmbracelet/huh"
@@ -73,19 +74,56 @@ func PrintTable(headers []string, rows [][]string) {
 	fmt.Println(t.Render())
 }
 
-func PrintSimpleList(items []string, activeItem string) {
+func ProfileSimpleList(items map[string]string, activeItem string) {
+	keys := make([]string, 0, len(items))
+	for k := range items {
+		keys = append(keys, k)
+	}
+	sort.Strings(keys)
+
+	for _, name := range keys {
+		apiKey := items[name]
+		displayApiKey := ""
+
+		if apiKey != "" {
+			shortKey := apiKey
+			if len(shortKey) > 10 {
+				shortKey = shortKey[:10]
+			}
+			displayApiKey = LabelStyle.Render(fmt.Sprintf(" (%s...)", shortKey))
+		} else {
+			displayApiKey = LabelStyle.Render(" (no API key)")
+		}
+
+		output := name + displayApiKey
+		if name == activeItem {
+			output = lipgloss.NewStyle().
+				Foreground(AbacateGreen).
+				Bold(true).
+				Render(name) + displayApiKey + lipgloss.NewStyle().
+				Foreground(AbacateGreen).
+				Bold(true).
+				Render("     🥑")
+		}
+
+		fmt.Println(output)
+	}
+	fmt.Println("")
+}
+
+func SimpleList(items []string, activeItem string) {
 	for _, item := range items {
 		output := item
 		if item == activeItem {
 			output = lipgloss.NewStyle().
 				Foreground(AbacateGreen).
 				Bold(true).
-				Render(item + "     🥑") // Espaçamento horizontal aumentado
+				Render(item + "     🥑")
 		}
 
 		fmt.Println(output)
 	}
-	fmt.Println("") // Apenas uma linha ao final da lista
+	fmt.Println("")
 }
 
 func PrintSuccess(title string, fields map[string]string) {
@@ -109,7 +147,7 @@ func Select(title string, options map[string]string) (string, error) {
 }
 
 func Input(title, placeholder string, value *string, validate func(string) error) error {
-	input := huh.NewInput().Title(title).Placeholder(placeholder).Value(value)
+	input := huh.NewInput().Title(title + "\n").Placeholder(placeholder).Value(value)
 	if validate != nil {
 		input.Validate(validate)
 	}

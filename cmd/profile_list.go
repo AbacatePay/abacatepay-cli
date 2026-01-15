@@ -38,7 +38,13 @@ func listProfiles() error {
 		return nil
 	}
 
-	style.PrintSimpleList(profiles, active)
+	profileMap := make(map[string]string)
+	for _, p := range profiles {
+		token, _ := deps.Store.GetNamed(p)
+		profileMap[p] = token
+	}
+
+	style.ProfileSimpleList(profileMap, active)
 
 	return nil
 }
