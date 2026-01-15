@@ -7,6 +7,7 @@ import (
 	"abacatepay-cli/internal/payments"
 	"abacatepay-cli/internal/prompts"
 	"abacatepay-cli/internal/style"
+	"abacatepay-cli/internal/types"
 	"abacatepay-cli/internal/utils"
 
 	v1 "github.com/almeidazs/go-abacate-types/v1"
@@ -16,13 +17,18 @@ import (
 var createInteractive bool
 
 var createPaymentCmd = &cobra.Command{
-	Use:   "create",
+	Use:   "create [pix|checkout]",
 	Short: "Create a new payment charge",
 	Long: `Create a new payment charge.
 By default, creates a mock payment with random data.
 Use -i to enter interactive mode and specify details.`,
+	Args: cobra.MaximumNArgs(1),
 	RunE: func(cmd *cobra.Command, args []string) error {
-		return createPayment()
+		var method string
+		if len(args) > 0 {
+			method = args[0]
+		}
+		return createPayment(method)
 	},
 }
 
@@ -32,45 +38,58 @@ func init() {
 	createPaymentCmd.Flags().BoolVarP(&createInteractive, "interactive", "i", false, "Enable interactive mode")
 }
 
-func createPayment() error {
+func createPayment(method string) error {
 	deps, err := utils.SetupClient(Local, Verbose)
 	if err != nil {
 		return err
 	}
 
-	options := map[string]string{
-		"PIX QR Code": "pix_qrcode",
-		"Checkout ":   "checkout",
+	if len(method) == 0 {
+		options := map[string]string{
+			"PIX QR Code": "pix",
+			"Checkout":    "checkout",
+		}
+
+		method, err = style.Select("🥑 Escolha o método de pagamento\n", options)
+		if err != nil {
+			return err
+		}
 	}
 
-	method, err := style.Select("🥑 Escolha o método de pagamento\n", options)
-	if err != nil {
-		return err
-	}
-
+	service := payments.New(deps.Client, deps.Config.APIBaseURL)
 	switch method {
-	case "pix_qrcode":
+	case "pix", "pix_qrcode":
 		body := &v1.RESTPostCreateQRCodePixBody{
 			Customer: &v1.APICustomerMetadata{},
 		}
-		pixService := payments.New(deps.Client, deps.Config.APIBaseURL)
 
 		if createInteractive {
 			if err := prompts.PromptForPIXQRCodeData(body); err != nil {
 				return fmt.Errorf("error to prompt pix qrcode data: %w", err)
 			}
-
-			return pixService.CreatePixQRCode(body)
+		} else {
+			body = mock.CreatePixQRCodeMock()
 		}
 
-		body = mock.CreatePixQRCodeMock()
-		return pixService.CreatePixQRCode(body)
-
+		_, err := service.CreatePixQRCode(body, false)
+		return err
 	case "checkout":
-		fmt.Println("🚧 Criação de pagamento via Cartão de Crédito em breve!")
-		return nil
+		var body *types.CreateCheckoutRequest
+
+		if createInteractive {
+			body = &types.CreateCheckoutRequest{
+				Customer: &types.Customer{},
+			}
+			if err := prompts.PromptForCheckout(body); err != nil {
+				return fmt.Errorf("error to prompt checkout data: %w", err)
+			}
+		} else {
+			body = mock.CreateCheckoutMock()
+		}
+
+		return service.CreateCheckout(body)
 
 	default:
-		return nil
+		return fmt.Errorf("método de pagamento inválido: %s. Use 'pix' ou 'checkout'", method)
 	}
 }

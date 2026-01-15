@@ -1,10 +1,14 @@
 package cmd
 
 import (
-	"fmt"
+	"errors"
 
+	"abacatepay-cli/internal/mock"
+	"abacatepay-cli/internal/payments"
+	"abacatepay-cli/internal/style"
 	"abacatepay-cli/internal/utils"
 
+	v1 "github.com/almeidazs/go-abacate-types/v1"
 	"github.com/spf13/cobra"
 )
 
@@ -22,26 +26,48 @@ func init() {
 }
 
 func trigger(evt string) error {
-	if !utils.IsOnline() {
-		return fmt.Errorf("you’re offline — check your connection and try again")
+	deps, err := utils.SetupClient(Local, Verbose)
+	if err != nil {
+		return err
 	}
 
-	if r := isEvent(evt); !r {
-		return fmt.Errorf("unknown event '%s'. Available events: billing.paid, withdraw.done, withdraw.failed", evt)
+	if err := handleEvent(deps, evt); err != nil {
+		return err
 	}
 
 	return nil
 }
 
-func isEvent(evt string) bool {
+func handleEvent(deps *utils.Dependencies, evt string) error {
+	service := payments.New(deps.Client, deps.Config.APIBaseURL)
+
 	switch evt {
 	case "billing.paid":
-		return true
-	case "withdraw.done":
-		return true
-	case "withdraw.failed":
-		return true
+		body := &v1.RESTPostCreateQRCodePixBody{
+			Customer: &v1.APICustomerMetadata{},
+		}
+
+		body = mock.CreatePixQRCodeMock()
+
+		pixID, err := service.CreatePixQRCode(body, true)
+		if err != nil {
+			return err
+		}
+
+		if err := service.SimulatePixQRCodePayment(pixID, true); err != nil {
+			return err
+		}
+
+		style.PrintSuccess("Billing.paid Triggered", map[string]string{
+			"ID": pixID,
+		})
+
+		return nil
+	case "payout.done":
+		return nil
+	case "payout.failed":
+		return nil
 	default:
-		return false
+		return errors.New("invalid event")
 	}
 }

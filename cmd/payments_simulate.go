@@ -48,5 +48,5 @@ func simulate(paymentID string) error {
 
 	pixService := payments.New(deps.Client, deps.Config.APIBaseURL)
 
-	return pixService.SimulatePixQRCodePayment(paymentID)
+	return pixService.SimulatePixQRCodePayment(paymentID, false)
 }

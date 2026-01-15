@@ -5,6 +5,7 @@ import (
 	"strconv"
 
 	"abacatepay-cli/internal/style"
+	"abacatepay-cli/internal/types"
 
 	v1 "github.com/almeidazs/go-abacate-types/v1"
 )
@@ -44,5 +45,38 @@ func PromptForPIXQRCodeData(body *v1.RESTPostCreateQRCodePixBody) error {
 	return nil
 }
 
-func PromptForCreditCard() {
+func PromptForCheckout(body *types.CreateCheckoutRequest) error {
+	if err := style.Input("Nome do Cliente", "João Silva", &body.Customer.Name, nil); err != nil {
+		return err
+	}
+
+	if err := style.Input("Email do Cliente", "joao@exemplo.com", &body.Customer.Email, nil); err != nil {
+		return err
+	}
+
+	if err := style.Input("CPF/CNPJ do Cliente", "12345678909", &body.Customer.TaxID, nil); err != nil {
+		return err
+	}
+	var productID string
+	if err := style.Input("ID do Produto", "prod_abc123xyz", &productID, nil); err != nil {
+		return err
+	}
+
+	var qtdStr string
+	if err := style.Input("Qtd do Produto", "1", &qtdStr, nil); err != nil {
+		return err
+	}
+	qtd, err := strconv.Atoi(qtdStr)
+	if err != nil {
+		return err
+	}
+
+	body.Items = []types.Item{
+		{
+			ID:       productID,
+			Quantity: qtd,
+		},
+	}
+
+	return nil
 }

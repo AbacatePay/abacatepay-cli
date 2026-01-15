@@ -2,40 +2,35 @@ package payments
 
 import (
 	"abacatepay-cli/internal/style"
+	"abacatepay-cli/internal/types"
 
 	v1 "github.com/almeidazs/go-abacate-types/v1"
 )
 
-type pixResponse struct {
-	Data struct {
-		ID     string `json:"id"`
-		BRCode string `json:"brCode"`
-		Status string `json:"status"`
-	} `json:"data"`
-}
-
-func (s *Service) CreatePixQRCode(body *v1.RESTPostCreateQRCodePixBody) error {
-	var result pixResponse
+func (s *Service) CreatePixQRCode(body *v1.RESTPostCreateQRCodePixBody, isTrigger bool) (string, error) {
+	var result types.PixResponse
 	err := s.executeRequest(
 		s.Client.R().SetBody(body),
 		"POST",
-		s.BaseURL+v1.RouteCreatePIXQRCode,
+		s.BaseURL+"/v1"+v1.RouteCreatePIXQRCode,
 		&result,
 	)
 	if err != nil {
-		return err
+		return "", err
 	}
 
-	style.PrintSuccess("PIX Payment Created", map[string]string{
-		"ID":     result.Data.ID,
-		"Status": "PENDING",
-	})
+	if !isTrigger {
+		style.PrintSuccess("PIX Payment Created", map[string]string{
+			"ID":     result.Data.ID,
+			"Status": "PENDING",
+		})
+	}
 
-	return nil
+	return result.Data.ID, nil
 }
 
 func (s *Service) CheckPixQRCode(id string) error {
-	var result pixResponse
+	var result types.PixResponse
 	err := s.executeRequest(
 		s.Client.R().SetQueryParam("id", id),
 		"GET",
@@ -54,22 +49,24 @@ func (s *Service) CheckPixQRCode(id string) error {
 	return nil
 }
 
-func (s *Service) SimulatePixQRCodePayment(id string) error {
-	var result pixResponse
+func (s *Service) SimulatePixQRCodePayment(id string, isTrigger bool) error {
+	var result types.PixResponse
 	err := s.executeRequest(
 		s.Client.R().SetQueryParam("id", id),
 		"POST",
-		s.BaseURL+v1.RouteSimulatePayment,
+		s.BaseURL+"/v1"+v1.RouteSimulatePayment,
 		&result,
 	)
 	if err != nil {
 		return err
 	}
 
-	style.PrintSuccess("PIX Payment Simulated", map[string]string{
-		"ID":     result.Data.ID,
-		"Status": result.Data.Status,
-	})
+	if !isTrigger {
+		style.PrintSuccess("PIX Payment Simulated", map[string]string{
+			"ID":     result.Data.ID,
+			"Status": result.Data.Status,
+		})
+	}
 
 	return nil
 }

@@ -1,44 +1,14 @@
 package payments
 
 import (
-	"abacatepay-cli/internal/style"
 	"fmt"
+
+	"abacatepay-cli/internal/style"
+	"abacatepay-cli/internal/types"
 )
 
-type CreateCheckoutRequest struct {
-	Items         []Item    `json:"items"`
-	Method        string    `json:"method,omitempty"` // PIX | CARD (default: PIX)
-	ReturnURL     string    `json:"returnUrl,omitempty"`
-	CompletionURL string    `json:"completionUrl,omitempty"`
-	CustomerID    string    `json:"customerId,omitempty"`
-	Customer      *Customer `json:"customer,omitempty"`
-	Coupons       []string  `json:"coupons,omitempty"`
-	ExternalID    string    `json:"externalId,omitempty"`
-}
-
-type Item struct {
-	ID       string `json:"id"`
-	Quantity int    `json:"quantity"`
-}
-
-type Customer struct {
-	Name      string `json:"name,omitempty"`
-	Cellphone string `json:"cellphone,omitempty"`
-	Email     string `json:"email,omitempty"`
-	TaxID     string `json:"taxId,omitempty"`
-}
-
-type checkoutResponse struct {
-	Data struct {
-		ID     string `json:"id"`
-		URL    string `json:"url"`
-		Status string `json:"status"`
-		Amount int    `json:"amount"`
-	} `json:"data"`
-}
-
-func (s *Service) CreateCheckout(body *CreateCheckoutRequest) error {
-	var result checkoutResponse
+func (s *Service) CreateCheckout(body *types.CreateCheckoutRequest) error {
+	var result types.CheckoutResponse
 	err := s.executeRequest(
 		s.Client.R().SetBody(body),
 		"POST",
