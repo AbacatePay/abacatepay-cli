@@ -5,6 +5,7 @@ import (
 	"context"
 	"fmt"
 	"log/slog"
+	"math/rand"
 	"os"
 	"strings"
 
@@ -12,9 +13,9 @@ import (
 	"abacatepay-cli/internal/client"
 	"abacatepay-cli/internal/config"
 	"abacatepay-cli/internal/logger"
+	"abacatepay-cli/internal/style"
 	"abacatepay-cli/internal/webhook"
 
-	"github.com/charmbracelet/lipgloss"
 	"github.com/creativeprojects/go-selfupdate"
 	"github.com/go-resty/resty/v2"
 )
@@ -50,13 +51,11 @@ func StartListener(params *StartListenerParams) error {
 	}
 
 	logCfg, err := logger.DefaultConfig()
-
 	if err != nil {
 		return fmt.Errorf("failed to configure logger: %w", err)
 	}
 
 	txLogger, err := logger.NewTransactionLogger(logCfg)
-
 	if err != nil {
 		return fmt.Errorf("failed to initialize transaction logger: %w", err)
 	}
@@ -89,7 +88,6 @@ func PromptForURL(defaultURL string) string {
 	fmt.Fprintf(os.Stderr, "\nForward events to [%s]: ", defaultURL)
 
 	input, err := reader.ReadString('\n')
-
 	if err != nil {
 		return defaultURL
 	}
@@ -117,10 +115,34 @@ func SetupDependencies(local bool, verbose bool) *Dependencies {
 	}
 }
 
+func SetupClient(local, verbose bool) (*Dependencies, error) {
+	if !IsOnline() {
+		return nil, fmt.Errorf("you’re offline — check your connection and try again")
+	}
+
+	deps := SetupDependencies(local, verbose)
+	activeProfile, err := deps.Store.GetActiveProfile()
+	if err != nil {
+		return nil, fmt.Errorf("failed to get active profile: %w", err)
+	}
+
+	token, err := deps.Store.GetNamed(activeProfile)
+	if err != nil || token == "" {
+		return nil, fmt.Errorf("token not found for active profile: %s", activeProfile)
+	}
+
+	_, err = auth.ValidateToken(deps.Client, deps.Config.APIBaseURL, token)
+	if err != nil {
+		return nil, fmt.Errorf("session expired for profile %s: %w", activeProfile, err)
+	}
+
+	deps.Client.SetAuthToken(token)
+	return deps, nil
+}
+
 func CheckUpdate(ctx context.Context, currentVersion string) (*selfupdate.Release, bool, error) {
 	slug := "AbacatePay/abacatepay-cli"
 	latest, found, err := selfupdate.DetectLatest(ctx, selfupdate.ParseSlug(slug))
-
 	if err != nil {
 		return nil, false, err
 	}
@@ -139,37 +161,49 @@ func ShowUpdate(currentVersion string) {
 		return
 	}
 
-	var (
-		primaryColor = lipgloss.Color("#25D366")
-		yellowColor  = lipgloss.Color("#FFFF00")
-
-		boxStyle = lipgloss.NewStyle().
-				BorderStyle(lipgloss.RoundedBorder()).
-				BorderForeground(primaryColor).
-				Padding(1, 2).
-				MarginTop(1).
-				MarginBottom(1)
-
-		titleStyle = lipgloss.NewStyle().
-				Foreground(primaryColor).
-				Bold(true)
-
-		versionStyle = lipgloss.NewStyle().
-				Foreground(yellowColor).
-				Bold(true)
-
-		commandStyle = lipgloss.NewStyle().
-				Foreground(primaryColor).
-				Bold(true)
-	)
-
 	msg := fmt.Sprintf(
 		"🥑 %s %s\n      Current: %s\n\n   To update, run:\n   %s",
-		titleStyle.Render("Update available:"),
-		versionStyle.Render(latest.Version()),
+		style.TitleStyle.Render("Update available:"),
+		style.VersionStyle.Render(latest.Version()),
 		currentVersion,
-		commandStyle.Render("abacatepay update"),
+		style.CommandStyle.Render("abacatepay update"),
 	)
 
-	fmt.Fprintln(os.Stderr, boxStyle.Render(msg))
+	fmt.Fprintln(os.Stderr, style.BoxStyle.Render(msg))
+}
+
+func GenerateValidCPF(r *rand.Rand) string {
+	digits := make([]int, 11)
+	for i := 0; i < 9; i++ {
+		digits[i] = r.Intn(10)
+	}
+
+	sum := 0
+	for i := 0; i < 9; i++ {
+		sum += digits[i] * (10 - i)
+	}
+	remainder := (sum * 10) % 11
+	if remainder == 10 || remainder == 11 {
+		digits[9] = 0
+	} else {
+		digits[9] = remainder
+	}
+
+	sum = 0
+	for i := 0; i < 10; i++ {
+		sum += digits[i] * (11 - i)
+	}
+
+	remainder = (sum * 10) % 11
+	if remainder == 10 || remainder == 11 {
+		digits[10] = 0
+	} else {
+		digits[10] = remainder
+	}
+
+	cpf := ""
+	for _, d := range digits {
+		cpf += fmt.Sprintf("%d", d)
+	}
+	return cpf
 }
