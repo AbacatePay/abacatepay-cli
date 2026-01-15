@@ -4,7 +4,7 @@ import (
 	"fmt"
 
 	"abacatepay-cli/internal/mock"
-	"abacatepay-cli/internal/payments/pix"
+	"abacatepay-cli/internal/payments"
 	"abacatepay-cli/internal/prompts"
 	"abacatepay-cli/internal/style"
 	"abacatepay-cli/internal/utils"
@@ -39,8 +39,8 @@ func createPayment() error {
 	}
 
 	options := map[string]string{
-		"PIX QR Code":       "pix",
-		"Cartão de Crédito": "card",
+		"PIX QR Code": "pix_qrcode",
+		"Checkout ":   "checkout",
 	}
 
 	method, err := style.Select("🥑 Escolha o método de pagamento\n", options)
@@ -49,24 +49,24 @@ func createPayment() error {
 	}
 
 	switch method {
-	case "pix":
+	case "pix_qrcode":
 		body := &v1.RESTPostCreateQRCodePixBody{
 			Customer: &v1.APICustomerMetadata{},
 		}
-		pixService := pix.New(deps.Client, deps.Config.APIBaseURL)
+		pixService := payments.New(deps.Client, deps.Config.APIBaseURL)
 
 		if createInteractive {
 			if err := prompts.PromptForPIXQRCodeData(body); err != nil {
 				return fmt.Errorf("error to prompt pix qrcode data: %w", err)
 			}
 
-			return pixService.CreateQRCode(body)
+			return pixService.CreatePixQRCode(body)
 		}
 
 		body = mock.CreatePixQRCodeMock()
-		return pixService.CreateQRCode(body)
+		return pixService.CreatePixQRCode(body)
 
-	case "card":
+	case "checkout":
 		fmt.Println("🚧 Criação de pagamento via Cartão de Crédito em breve!")
 		return nil
 

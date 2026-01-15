@@ -29,3 +29,5 @@ func CreatePixQRCodeMock() *v1.RESTPostCreateQRCodePixBody {
 	}
 }
 
+func CreateCheckoutMock() {
+}
