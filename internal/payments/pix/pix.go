@@ -83,3 +83,31 @@ func (s *Service) CheckQRCode(id string) error {
 	return nil
 }
 
+func (s *Service) SimulateQRCodePayment(id string) error {
+	resp, err := s.Client.R().
+		SetQueryParam("id", id).
+		Post(s.BaseURL + v1.RouteSimulatePayment)
+	if err != nil {
+		return fmt.Errorf("failed to send request: %w", err)
+	}
+
+	if resp.IsError() {
+		return fmt.Errorf("API error (%d): %s", resp.StatusCode(), resp.String())
+	}
+
+	var result pixResponse
+	if err := json.Unmarshal(resp.Body(), &result); err != nil {
+		return fmt.Errorf("failed to parse response: %w", err)
+	}
+
+	if result.Data.ID == "" {
+		return fmt.Errorf("no ID found in response")
+	}
+
+	fmt.Println("---------------------------------------------------------")
+	fmt.Printf("PIX ID: %s\n", result.Data.ID)
+	fmt.Printf("PIX STATUS: %s\n", result.Data.Status)
+
+	return nil
+}
+
