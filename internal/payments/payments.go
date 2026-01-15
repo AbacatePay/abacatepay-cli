@@ -1,8 +1,11 @@
 package payments
 
 import (
+	"abacatepay-cli/internal/style"
+	"abacatepay-cli/internal/types"
 	"encoding/json"
 	"fmt"
+	"net/http"
 
 	"github.com/go-resty/resty/v2"
 )
@@ -37,7 +40,7 @@ func (s *Service) executeRequest(req *resty.Request, method, url string, result 
 	}
 
 	if resp.IsError() {
-		return fmt.Errorf("API error (%d): %s", resp.StatusCode(), resp.String())
+		return s.handleAPIError(resp)
 	}
 
 	if err := json.Unmarshal(resp.Body(), result); err != nil {
@@ -45,4 +48,27 @@ func (s *Service) executeRequest(req *resty.Request, method, url string, result 
 	}
 
 	return nil
+}
+
+func (s *Service) handleAPIError(resp *resty.Response) error {
+	var apiErr types.APIError
+	_ = json.Unmarshal(resp.Body(), &apiErr)
+
+	errorMessage := apiErr.Message
+	if errorMessage == "" {
+		errorMessage = fmt.Sprintf("Unexpected error (Status %d)", resp.StatusCode())
+	}
+
+	switch resp.StatusCode() {
+	case http.StatusUnauthorized:
+		style.PrintError("Session expired or invalid API Key. Please login again.")
+	case http.StatusTooManyRequests:
+		style.PrintError("Too many requests. Please slow down.")
+	case http.StatusInternalServerError:
+		style.PrintError("Server error. Please try again later.")
+	default:
+		style.PrintError(errorMessage)
+	}
+
+	return fmt.Errorf("API Error: %s", errorMessage)
 }

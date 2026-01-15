@@ -53,3 +53,7 @@ type DeviceLoginResponse struct {
 type TokenResponse struct {
 	Token string `json:"token"`
 }
+
+type APIError struct {
+	Message string `json:"error"`
+}
