@@ -28,6 +28,7 @@ Use -i to enter interactive mode and specify details.`,
 		if len(args) > 0 {
 			method = args[0]
 		}
+
 		return createPayment(method)
 	},
 }
@@ -44,7 +45,7 @@ func createPayment(method string) error {
 		return err
 	}
 
-	if len(method) == 0 {
+	if method == "" {
 		options := map[string]string{
 			"PIX QR Code": "pix",
 			"Checkout":    "checkout",
@@ -57,34 +58,36 @@ func createPayment(method string) error {
 	}
 
 	service := payments.New(deps.Client, deps.Config.APIBaseURL)
+
 	switch method {
 	case "pix", "pix_qrcode":
+		if !createInteractive {
+			body := mock.CreatePixQRCodeMock()
+			_, err := service.CreatePixQRCode(body, false)
+			return err
+		}
+
 		body := &v1.RESTPostCreateQRCodePixBody{
 			Customer: &v1.APICustomerMetadata{},
 		}
-
-		if createInteractive {
-			if err := prompts.PromptForPIXQRCodeData(body); err != nil {
-				return fmt.Errorf("error to prompt pix qrcode data: %w", err)
-			}
-		} else {
-			body = mock.CreatePixQRCodeMock()
+		if err := prompts.PromptForPIXQRCodeData(body); err != nil {
+			return fmt.Errorf("error to prompt pix qrcode data: %w", err)
 		}
 
 		_, err := service.CreatePixQRCode(body, false)
 		return err
-	case "checkout":
-		var body *types.CreateCheckoutRequest
 
-		if createInteractive {
-			body = &types.CreateCheckoutRequest{
-				Customer: &types.Customer{},
-			}
-			if err := prompts.PromptForCheckout(body); err != nil {
-				return fmt.Errorf("error to prompt checkout data: %w", err)
-			}
-		} else {
-			body = mock.CreateCheckoutMock()
+	case "checkout":
+		if !createInteractive {
+			body := mock.CreateCheckoutMock()
+			return service.CreateCheckout(body)
+		}
+
+		body := &types.CreateCheckoutRequest{
+			Customer: &types.Customer{},
+		}
+		if err := prompts.PromptForCheckout(body); err != nil {
+			return fmt.Errorf("error to prompt checkout data: %w", err)
 		}
 
 		return service.CreateCheckout(body)
