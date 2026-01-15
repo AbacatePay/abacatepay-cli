@@ -41,7 +41,7 @@ func (k *KeyringStore) getKeyring() (keyring.Keyring, error) {
 
 	storeDir := filepath.Join(homeDir, ".abacatepay", "keyring")
 	if err := os.MkdirAll(storeDir, 0o700); err != nil {
-		return nil, fmt.Errorf("falha ao criar diretório do keyring: %w", err)
+		return nil, fmt.Errorf("failed to create keyring directory: %w", err)
 	}
 
 	return keyring.Open(keyring.Config{
@@ -57,12 +57,12 @@ func (k *KeyringStore) getKeyring() (keyring.Keyring, error) {
 func (k *KeyringStore) List() ([]string, error) {
 	ring, err := k.getKeyring()
 	if err != nil {
-		return nil, fmt.Errorf("falha ao abrir keyring: %w", err)
+		return nil, fmt.Errorf("failed to open keyring: %w", err)
 	}
 
 	keys, err := ring.Keys()
 	if err != nil {
-		return nil, fmt.Errorf("falha ao listar chaves: %w", err)
+		return nil, fmt.Errorf("failed to list keys: %w", err)
 	}
 
 	var profiles []string

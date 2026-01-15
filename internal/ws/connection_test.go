@@ -48,13 +48,13 @@ func TestConnectWithRetry_Success(t *testing.T) {
 	err := ConnectWithRetry(ctx, cfg, handler)
 
 	if err != context.DeadlineExceeded {
-		t.Errorf("Erro esperado context.DeadlineExceeded, obteve: %v", err)
+		t.Errorf("Expected error context.DeadlineExceeded, got: %v", err)
 	}
 
 	mu.Lock()
 	defer mu.Unlock()
 	if connectedCount == 0 {
-		t.Error("O handler deveria ter sido chamado pelo menos uma vez")
+		t.Error("The handler should have been called at least once")
 	}
 }
 
@@ -69,11 +69,11 @@ func TestConnectWithRetry_ConnectionRefused(t *testing.T) {
 	defer cancel()
 
 	err := ConnectWithRetry(ctx, cfg, func(ctx context.Context, conn *websocket.Conn) error {
-		t.Error("Não deveria conectar")
+		t.Error("Should not have connected")
 		return nil
 	})
 
 	if err != context.DeadlineExceeded {
-		t.Errorf("Erro esperado context.DeadlineExceeded ao cancelar retries, obteve: %v", err)
+		t.Errorf("Expected error context.DeadlineExceeded when canceling retries, got: %v", err)
 	}
 }

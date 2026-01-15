@@ -51,7 +51,7 @@ func createPayment(method string) error {
 			"Checkout":    "checkout",
 		}
 
-		method, err = style.Select("🥑 Escolha o método de pagamento\n", options)
+		method, err = style.Select("🥑 Choose payment method\n", options)
 		if err != nil {
 			return err
 		}
@@ -93,6 +93,6 @@ func createPayment(method string) error {
 		return service.CreateCheckout(body)
 
 	default:
-		return fmt.Errorf("método de pagamento inválido: %s. Use 'pix' ou 'checkout'", method)
+		return fmt.Errorf("invalid payment method: %s. Use 'pix' or 'checkout'", method)
 	}
 }
