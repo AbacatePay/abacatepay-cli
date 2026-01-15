@@ -13,9 +13,9 @@ import (
 	"abacatepay-cli/internal/client"
 	"abacatepay-cli/internal/config"
 	"abacatepay-cli/internal/logger"
+	"abacatepay-cli/internal/style"
 	"abacatepay-cli/internal/webhook"
 
-	"github.com/charmbracelet/lipgloss"
 	"github.com/creativeprojects/go-selfupdate"
 	"github.com/go-resty/resty/v2"
 )
@@ -115,6 +115,31 @@ func SetupDependencies(local bool, verbose bool) *Dependencies {
 	}
 }
 
+func SetupClient(local, verbose bool) (*Dependencies, error) {
+	if !IsOnline() {
+		return nil, fmt.Errorf("you’re offline — check your connection and try again")
+	}
+
+	deps := SetupDependencies(local, verbose)
+	activeProfile, err := deps.Store.GetActiveProfile()
+	if err != nil {
+		return nil, fmt.Errorf("failed to get active profile: %w", err)
+	}
+
+	token, err := deps.Store.GetNamed(activeProfile)
+	if err != nil || token == "" {
+		return nil, fmt.Errorf("token not found for active profile: %s", activeProfile)
+	}
+
+	_, err = auth.ValidateToken(deps.Client, deps.Config.APIBaseURL, token)
+	if err != nil {
+		return nil, fmt.Errorf("session expired for profile %s: %w", activeProfile, err)
+	}
+
+	deps.Client.SetAuthToken(token)
+	return deps, nil
+}
+
 func CheckUpdate(ctx context.Context, currentVersion string) (*selfupdate.Release, bool, error) {
 	slug := "AbacatePay/abacatepay-cli"
 	latest, found, err := selfupdate.DetectLatest(ctx, selfupdate.ParseSlug(slug))
@@ -136,39 +161,15 @@ func ShowUpdate(currentVersion string) {
 		return
 	}
 
-	var (
-		primaryColor = lipgloss.Color("#25D366")
-		yellowColor  = lipgloss.Color("#FFFF00")
-
-		boxStyle = lipgloss.NewStyle().
-				BorderStyle(lipgloss.RoundedBorder()).
-				BorderForeground(primaryColor).
-				Padding(1, 2).
-				MarginTop(1).
-				MarginBottom(1)
-
-		titleStyle = lipgloss.NewStyle().
-				Foreground(primaryColor).
-				Bold(true)
-
-		versionStyle = lipgloss.NewStyle().
-				Foreground(yellowColor).
-				Bold(true)
-
-		commandStyle = lipgloss.NewStyle().
-				Foreground(primaryColor).
-				Bold(true)
-	)
-
 	msg := fmt.Sprintf(
 		"🥑 %s %s\n      Current: %s\n\n   To update, run:\n   %s",
-		titleStyle.Render("Update available:"),
-		versionStyle.Render(latest.Version()),
+		style.TitleStyle.Render("Update available:"),
+		style.VersionStyle.Render(latest.Version()),
 		currentVersion,
-		commandStyle.Render("abacatepay update"),
+		style.CommandStyle.Render("abacatepay update"),
 	)
 
-	fmt.Fprintln(os.Stderr, boxStyle.Render(msg))
+	fmt.Fprintln(os.Stderr, style.BoxStyle.Render(msg))
 }
 
 func GenerateValidCPF(r *rand.Rand) string {

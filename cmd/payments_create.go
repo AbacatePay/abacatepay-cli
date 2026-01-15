@@ -3,11 +3,12 @@ package cmd
 import (
 	"fmt"
 
-	"abacatepay-cli/internal/auth"
 	"abacatepay-cli/internal/mock"
 	"abacatepay-cli/internal/payments/pix"
+	"abacatepay-cli/internal/style"
 	"abacatepay-cli/internal/utils"
 
+	v1 "github.com/almeidazs/go-abacate-types/v1"
 	"github.com/spf13/cobra"
 )
 
@@ -31,35 +32,41 @@ func init() {
 }
 
 func createPayment(cmd *cobra.Command) error {
-	if !utils.IsOnline() {
-		return fmt.Errorf("you’re offline — check your connection and try again")
-	}
-
-	deps := utils.SetupDependencies(Local, Verbose)
-	activeProfile, err := deps.Store.GetActiveProfile()
+	deps, err := utils.SetupClient(Local, Verbose)
 	if err != nil {
-		return fmt.Errorf("failed to get active profile: %w", err)
+		return err
 	}
 
-	token, err := deps.Store.GetNamed(activeProfile)
-	if err != nil || token == "" {
-		return fmt.Errorf("token not found for active profile: %s", activeProfile)
+	method := "pix"
+	options := map[string]string{
+		"PIX QR Code":       "pix",
+		"Cartão de Crédito": "card",
 	}
 
-	_, err = auth.ValidateToken(deps.Client, deps.Config.APIBaseURL, token)
+	selected, err := style.Select("🥑 Escolha o método de pagamento\n", options)
 	if err != nil {
-		return fmt.Errorf("session expired for profile %s: %w", activeProfile, err)
+		return err
 	}
 
-	deps.Client.SetAuthToken(token)
-
+	method = selected
 	if createInteractive {
-		// TODO: Implement interactive mode if needed or delegate
-		return fmt.Errorf("interactive mode not yet implemented in this simplified setup")
+		salve := []string{"Amount", "ExpiresIn"}
+		body := &v1.RESTPostCreateQRCodePixBody{}
+		for i, field := range salve {
+			body[field] = "salve"
+		}
 	}
 
-	b := mock.CreatePixQRCodeMock()
-
-	pixService := pix.New(deps.Client, deps.Config.APIBaseURL)
-	return pixService.CreateQRCode(b)
+	switch method {
+	case "pix":
+		b := mock.CreatePixQRCodeMock()
+		pixService := pix.New(deps.Client, deps.Config.APIBaseURL)
+		return pixService.CreateQRCode(b)
+	case "card":
+		fmt.Println("🚧 Criação de pagamento via Cartão de Crédito em breve!")
+		return nil
+	default:
+		return fmt.Errorf("método de pagamento desconhecido: %s", method)
+	}
 }
+
