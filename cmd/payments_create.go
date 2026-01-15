@@ -2,6 +2,7 @@ package cmd
 
 import (
 	"fmt"
+	"strconv"
 
 	"abacatepay-cli/internal/mock"
 	"abacatepay-cli/internal/payments/pix"
@@ -47,21 +48,56 @@ func createPayment(cmd *cobra.Command) error {
 	if err != nil {
 		return err
 	}
-
 	method = selected
+
+	var body *v1.RESTPostCreateQRCodePixBody
+
+	body = mock.CreatePixQRCodeMock()
 	if createInteractive {
-		salve := []string{"Amount", "ExpiresIn"}
-		body := &v1.RESTPostCreateQRCodePixBody{}
-		for i, field := range salve {
-			body[field] = "salve"
+		body = &v1.RESTPostCreateQRCodePixBody{
+			Customer: &v1.APICustomerMetadata{},
+		}
+
+		var amountStr string
+		err = style.Input("Valor (em centavos, ex: 1000 para R$10,00)\n", "1000", &amountStr, func(s string) error {
+			if _, err := strconv.ParseInt(s, 10, 64); err != nil {
+				return fmt.Errorf("insira um número válido")
+			}
+			return nil
+		})
+		if err != nil {
+			return err
+		}
+		amount, _ := strconv.ParseInt(amountStr, 10, 64)
+		body.Amount = int(amount)
+
+		var desc string
+		err = style.Input("Descrição do Produto\n", "Minha compra", &desc, nil)
+		if err != nil {
+			return err
+		}
+		body.Description = &desc
+
+		err = style.Input("Nome do Cliente\n", "João Silva", &body.Customer.Name, nil)
+		if err != nil {
+			return err
+		}
+
+		err = style.Input("Email do Cliente\n", "joao@exemplo.com", &body.Customer.Email, nil)
+		if err != nil {
+			return err
+		}
+
+		err = style.Input("CPF/CNPJ do Cliente\n", "12345678909", &body.Customer.TaxID, nil)
+		if err != nil {
+			return err
 		}
 	}
 
 	switch method {
 	case "pix":
-		b := mock.CreatePixQRCodeMock()
 		pixService := pix.New(deps.Client, deps.Config.APIBaseURL)
-		return pixService.CreateQRCode(b)
+		return pixService.CreateQRCode(body)
 	case "card":
 		fmt.Println("🚧 Criação de pagamento via Cartão de Crédito em breve!")
 		return nil

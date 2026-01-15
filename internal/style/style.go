@@ -32,20 +32,20 @@ var (
 )
 
 func AbacateTheme() *huh.Theme {
-	theme := huh.ThemeBase()
+	t := huh.ThemeBase()
 
-	theme.Focused.Title = TitleStyle
-	theme.Focused.Base = lipgloss.NewStyle().BorderForeground(AbacateGreen)
-	theme.Focused.SelectedOption = lipgloss.NewStyle().Foreground(Brown)
+	t.Focused.Title = t.Focused.Title.Foreground(AbacateGreen).Bold(true)
+	t.Focused.Base = t.Focused.Base.BorderForeground(AbacateGreen)
+	t.Focused.SelectedOption = t.Focused.SelectedOption.Foreground(Brown)
 
-	theme.Blurred.Title = lipgloss.NewStyle().Foreground(Gray)
+	t.Blurred.Title = t.Blurred.Title.Foreground(Gray)
 
-	return theme
+	return t
 }
 
 func Select(title string, options map[string]string) (string, error) {
 	var result string
-	huhOptions := make([]huh.Option[string], 0, 5)
+	huhOptions := make([]huh.Option[string], 0, len(options))
 
 	for label, value := range options {
 		huhOptions = append(huhOptions, huh.NewOption(label, value))
@@ -64,6 +64,29 @@ func Select(title string, options map[string]string) (string, error) {
 	return result, err
 }
 
-func Container(title string) {
+func Input(title, placeholder string, value *string, validate func(string) error) error {
+	input := huh.NewInput().
+		Title(title).
+		Placeholder(placeholder).
+		Value(value)
+
+	if validate != nil {
+		input.Validate(validate)
+	}
+
+	form := huh.NewForm(huh.NewGroup(input)).WithTheme(AbacateTheme())
+	return form.Run()
+}
+
+func Confirm(title string, value *bool) error {
+	form := huh.NewForm(
+		huh.NewGroup(
+			huh.NewConfirm().
+				Title(title).
+				Value(value),
+		),
+	).WithTheme(AbacateTheme())
+
+	return form.Run()
 }
 
