@@ -6,6 +6,7 @@ import (
 
 	"github.com/charmbracelet/huh"
 	"github.com/charmbracelet/lipgloss"
+	"github.com/charmbracelet/lipgloss/table"
 )
 
 var (
@@ -50,6 +51,41 @@ func AbacateTheme() *huh.Theme {
 	t.Focused.SelectedOption = t.Focused.SelectedOption.Foreground(Brown)
 	t.Blurred.Title = t.Blurred.Title.Foreground(Gray)
 	return t
+}
+
+func PrintTable(headers []string, rows [][]string) {
+	t := table.New().
+		Border(lipgloss.NormalBorder()).
+		BorderStyle(lipgloss.NewStyle().Foreground(AbacateGreen)).
+		Headers(headers...).
+		Rows(rows...)
+
+	t.StyleFunc(func(row, col int) lipgloss.Style {
+		if row == 0 {
+			return lipgloss.NewStyle().
+				Foreground(AbacateGreen).
+				Bold(true).
+				Align(lipgloss.Center)
+		}
+		return lipgloss.NewStyle().Padding(0, 1)
+	})
+
+	fmt.Println(t.Render())
+}
+
+func PrintSimpleList(items []string, activeItem string) {
+	for _, item := range items {
+		output := item
+		if item == activeItem {
+			output = lipgloss.NewStyle().
+				Foreground(AbacateGreen).
+				Bold(true).
+				Render(item + "     🥑") // Espaçamento horizontal aumentado
+		}
+
+		fmt.Println(output)
+	}
+	fmt.Println("") // Apenas uma linha ao final da lista
 }
 
 func PrintSuccess(title string, fields map[string]string) {
