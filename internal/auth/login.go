@@ -13,16 +13,8 @@ import (
 	"github.com/go-resty/resty/v2"
 
 	"abacatepay-cli/internal/config"
+	"abacatepay-cli/internal/types"
 )
-
-type DeviceLoginResponse struct {
-	DeviceCode      string `json:"deviceCode"`
-	VerificationURI string `json:"verificationUri"`
-}
-
-type TokenResponse struct {
-	Token string `json:"token"`
-}
 
 type LoginParams struct {
 	Config      *config.Config
@@ -73,7 +65,7 @@ func Login(params *LoginParams) error {
 		host = "unknown"
 	}
 
-	var result DeviceLoginResponse
+	var result types.DeviceLoginResponse
 
 	resp, err := params.Client.R().
 		SetContext(params.Context).
@@ -169,7 +161,7 @@ func pollForToken(ctx context.Context, cfg *config.Config, client *resty.Client,
 		case <-ticker.C:
 		}
 
-		var result TokenResponse
+		var result types.TokenResponse
 
 		resp, err := client.R().
 			SetContext(ctx).

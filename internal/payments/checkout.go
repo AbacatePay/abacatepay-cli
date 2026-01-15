@@ -1,10 +1,9 @@
 package payments
 
 import (
-	"fmt"
-
 	"abacatepay-cli/internal/style"
 	"abacatepay-cli/internal/types"
+	"fmt"
 )
 
 func (s *Service) CreateCheckout(body *types.CreateCheckoutRequest) error {

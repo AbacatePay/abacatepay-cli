@@ -18,16 +18,6 @@ type CreateCheckoutRequest struct {
 	ExternalID    string    `json:"externalId,omitempty"`
 }
 
-type UserData struct {
-	ID    string `json:"id"`
-	Name  string `json:"name"`
-	Email string `json:"email"`
-}
-
-type UserResponse struct {
-	Data UserData `json:"data"`
-}
-
 type Item struct {
 	ID       string `json:"id"`
 	Quantity int    `json:"quantity"`
@@ -48,4 +38,18 @@ type PixResponse struct {
 		BRCode string `json:"brCode"`
 		Status string `json:"status"`
 	} `json:"data"`
+}
+
+type User struct {
+	Name  string
+	Email string
+}
+
+type DeviceLoginResponse struct {
+	DeviceCode      string `json:"deviceCode"`
+	VerificationURI string `json:"verificationUri"`
+}
+
+type TokenResponse struct {
+	Token string `json:"token"`
 }
