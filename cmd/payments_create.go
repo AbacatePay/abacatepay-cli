@@ -38,8 +38,6 @@ func createPayment() error {
 		return err
 	}
 
-	pixService := pix.New(deps.Client, deps.Config.APIBaseURL)
-
 	options := map[string]string{
 		"PIX QR Code":       "pix",
 		"Cartão de Crédito": "card",
@@ -50,23 +48,29 @@ func createPayment() error {
 		return err
 	}
 
-	if !createInteractive {
-		body := mock.CreatePixQRCodeMock()
-		return pixService.CreateQRCode(body)
-	}
+	switch method {
+	case "pix":
+		body := &v1.RESTPostCreateQRCodePixBody{
+			Customer: &v1.APICustomerMetadata{},
+		}
+		pixService := pix.New(deps.Client, deps.Config.APIBaseURL)
 
-	if method == "card" {
+		if createInteractive {
+			if err := prompts.PromptForPIXQRCodeData(body); err != nil {
+				return fmt.Errorf("error to prompt pix qrcode data: %w", err)
+			}
+
+			return pixService.CreateQRCode(body)
+		}
+
+		body = mock.CreatePixQRCodeMock()
+		return pixService.CreateQRCode(body)
+
+	case "card":
 		fmt.Println("🚧 Criação de pagamento via Cartão de Crédito em breve!")
 		return nil
-	}
 
-	body := &v1.RESTPostCreateQRCodePixBody{
-		Customer: &v1.APICustomerMetadata{},
+	default:
+		return nil
 	}
-
-	if err := prompts.PromptForPIXQRCodeData(body); err != nil {
-		return fmt.Errorf("error to prompt pix qrcode data: %w", err)
-	}
-
-	return pixService.CreateQRCode(body)
 }

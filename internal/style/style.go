@@ -83,24 +83,24 @@ func ProfileSimpleList(items map[string]string, activeItem string) {
 
 	for _, name := range keys {
 		apiKey := items[name]
-		displayApiKey := ""
+		displayAPIKey := ""
 
+		displayAPIKey = LabelStyle.Render(" (no API key)")
 		if apiKey != "" {
 			shortKey := apiKey
 			if len(shortKey) > 10 {
 				shortKey = shortKey[:10]
 			}
-			displayApiKey = LabelStyle.Render(fmt.Sprintf(" (%s...)", shortKey))
-		} else {
-			displayApiKey = LabelStyle.Render(" (no API key)")
+
+			displayAPIKey = LabelStyle.Render(fmt.Sprintf(" (%s...)", shortKey))
 		}
 
-		output := name + displayApiKey
+		output := name + displayAPIKey
 		if name == activeItem {
 			output = lipgloss.NewStyle().
 				Foreground(AbacateGreen).
 				Bold(true).
-				Render(name) + displayApiKey + lipgloss.NewStyle().
+				Render(name) + displayAPIKey + lipgloss.NewStyle().
 				Foreground(AbacateGreen).
 				Bold(true).
 				Render("     🥑")

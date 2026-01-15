@@ -43,3 +43,6 @@ func PromptForPIXQRCodeData(body *v1.RESTPostCreateQRCodePixBody) error {
 
 	return nil
 }
+
+func PromptForCreditCard() {
+}
