@@ -4,7 +4,7 @@ import (
 	"fmt"
 
 	"abacatepay-cli/internal/auth"
-	"abacatepay-cli/internal/payments/pix"
+	"abacatepay-cli/internal/payments"
 	"abacatepay-cli/internal/utils"
 
 	"github.com/spf13/cobra"
@@ -46,7 +46,7 @@ func simulate(paymentID string) error {
 
 	deps.Client.SetAuthToken(token)
 
-	pixService := pix.New(deps.Client, deps.Config.APIBaseURL)
+	pixService := payments.New(deps.Client, deps.Config.APIBaseURL)
 
-	return pixService.SimulateQRCodePayment(paymentID)
+	return pixService.SimulatePixQRCodePayment(paymentID, false)
 }

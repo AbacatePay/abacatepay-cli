@@ -13,7 +13,6 @@ func IsOnline() bool {
 	const timeout = 2 * time.Second
 
 	conn, err := net.DialTimeout("tcp", googleDNS, timeout)
-
 	if err != nil {
 		return false
 	}

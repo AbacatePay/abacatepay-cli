@@ -37,6 +37,10 @@ var (
 			Foreground(White).
 			Bold(true)
 
+	ErrorStyle = lipgloss.NewStyle().
+			Foreground(lipgloss.Color("#FF0000")).
+			Bold(true)
+
 	BoxStyle = lipgloss.NewStyle().
 			BorderStyle(lipgloss.RoundedBorder()).
 			BorderForeground(AbacateGreen).
@@ -133,6 +137,12 @@ func PrintSuccess(title string, fields map[string]string) {
 		sb.WriteString(fmt.Sprintf("%s %s\n", LabelStyle.Render(label+":"), ValueStyle.Render(value)))
 	}
 	fmt.Println(BoxStyle.Render(sb.String()))
+}
+
+func PrintError(err string) {
+	fmt.Println(BoxStyle.Copy().BorderForeground(lipgloss.Color("#FF0000")).Render(
+		ErrorStyle.Render("⚠️  Error") + "\n\n" + lipgloss.NewStyle().Foreground(White).Render(err),
+	))
 }
 
 func Select(title string, options map[string]string) (string, error) {

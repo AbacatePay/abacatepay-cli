@@ -1,8 +1,7 @@
 package cmd
 
 import (
-	"log/slog"
-
+	"abacatepay-cli/internal/style"
 	"abacatepay-cli/internal/utils"
 
 	"github.com/spf13/cobra"
@@ -22,24 +21,22 @@ func init() {
 }
 
 func getAuthStatus() error {
-	deps := utils.SetupDependencies(Local, Verbose)
+	deps, err := utils.SetupClient(Local, Verbose)
+	if err != nil {
+		style.PrintError("You are not authenticated. Use 'abacatepay login' to start.")
+		return nil
+	}
 
 	activeProfile, err := deps.Store.GetActiveProfile()
-
 	if err != nil || activeProfile == "" {
-		slog.Info("Not signed in")
-
+		style.PrintError("No active profile found.")
 		return nil
 	}
 
-	token, err := deps.Store.GetNamed(activeProfile)
-	if err != nil || token == "" {
-		slog.Info("Not signed in", "profile", activeProfile)
-
-		return nil
-	}
-
-	slog.Info("Signed in", "profile", activeProfile)
+	style.PrintSuccess("Connected successfully", map[string]string{
+		"Profile": activeProfile,
+		"Status":  "Online",
+	})
 
 	return nil
 }
