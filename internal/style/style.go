@@ -38,7 +38,7 @@ var (
 			Bold(true)
 
 	ErrorStyle = lipgloss.NewStyle().
-			Foreground(lipgloss.Color("#FF0000")).
+			Foreground(lipgloss.Color("#ff8787")).
 			Bold(true)
 
 	BoxStyle = lipgloss.NewStyle().
@@ -140,9 +140,12 @@ func PrintSuccess(title string, fields map[string]string) {
 }
 
 func PrintError(err string) {
-	fmt.Println(BoxStyle.Copy().BorderForeground(lipgloss.Color("#FF0000")).Render(
-		ErrorStyle.Render("⚠️  Error") + "\n\n" + lipgloss.NewStyle().Foreground(White).Render(err),
-	))
+	fmt.Println(BoxStyle.Copy().
+		BorderForeground(lipgloss.Color("#ff8787")).
+		Padding(0, 1).
+		Render(
+			ErrorStyle.Render("⚠️  Error") + "\n\n" + lipgloss.NewStyle().Foreground(White).Render(err),
+		))
 }
 
 func Select(title string, options map[string]string) (string, error) {

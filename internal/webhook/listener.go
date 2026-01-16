@@ -52,7 +52,8 @@ func (l *Listener) Listen(ctx context.Context) error {
 		URL:        l.cfg.WebSocketBaseURL,
 		Headers:    header,
 		MinBackoff: 1 * time.Second,
-		MaxBackoff: 30 * time.Second,
+		MaxBackoff: 15 * time.Second,
+		MaxRetries: 5,
 	}
 
 	return ws.ConnectWithRetry(ctx, cfg, l.readLoop)

@@ -50,7 +50,6 @@ func Exec() {
 	}
 
 	if err := rootCmd.Execute(); err != nil {
-		slog.Error(err.Error())
 		os.Exit(1)
 	}
 }

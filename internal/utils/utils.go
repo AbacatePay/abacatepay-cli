@@ -147,7 +147,7 @@ func CheckUpdate(ctx context.Context, currentVersion string) (*selfupdate.Releas
 		return nil, false, err
 	}
 
-	if !found || latest.LessOrEqual(currentVersion) {
+	if !found || currentVersion == "" || latest.LessOrEqual(currentVersion) {
 		return nil, false, nil
 	}
 
