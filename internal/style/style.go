@@ -153,7 +153,7 @@ func LogWebhookReceived(event, id string) {
 	timestamp := time.Now().Format("15:04:05")
 	fmt.Printf("%s  %s %s [%s]\n",
 		lipgloss.NewStyle().Foreground(lipgloss.Color("#808080")).Render(timestamp),
-		lipgloss.NewStyle().Foreground(lipgloss.Color("#5469d4")).Bold(true).Render("-->"),
+		lipgloss.NewStyle().Foreground(AbacateGreen).Bold(true).Render("-->"),
 		lipgloss.NewStyle().Bold(true).Render(event),
 		lipgloss.NewStyle().Foreground(lipgloss.Color("#808080")).Render(id),
 	)
@@ -161,17 +161,23 @@ func LogWebhookReceived(event, id string) {
 
 func LogWebhookForwarded(statusCode int, statusText, event string) {
 	timestamp := time.Now().Format("15:04:05")
-	statusColor := "#24b47e" // Verde para 2xx
+	codeColor := "#a7c957"
 	if statusCode < 200 || statusCode >= 300 {
-		statusColor = "#e63946" // Vermelho para erro
+		codeColor = "#ff8787"
 	}
 
-	fmt.Printf("%s  %s [%d %s] %s\n",
+	codeStyle := lipgloss.NewStyle().Foreground(lipgloss.Color(codeColor)).Bold(true)
+	bracketStyle := lipgloss.NewStyle().Foreground(lipgloss.Color("#808080"))
+	textStyle := lipgloss.NewStyle().Foreground(White)
+
+	fmt.Printf("%s  %s %s%s %s%s %s\n",
 		lipgloss.NewStyle().Foreground(lipgloss.Color("#808080")).Render(timestamp),
-		lipgloss.NewStyle().Foreground(lipgloss.Color(statusColor)).Bold(true).Render("<--"),
-		statusCode,
-		statusText,
-		event,
+		lipgloss.NewStyle().Foreground(AbacateGreen).Bold(true).Render("<--"),
+		bracketStyle.Render("["),
+		codeStyle.Render(fmt.Sprintf("%d", statusCode)),
+		textStyle.Render(statusText),
+		bracketStyle.Render("]"),
+		lipgloss.NewStyle().Bold(true).Render(event),
 	)
 }
 

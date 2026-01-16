@@ -72,11 +72,12 @@ func (l *Listener) mockListen(ctx context.Context) error {
 		select {
 		case <-ctx.Done():
 			return nil
+
 		case <-ticker.C:
 			mockData := map[string]any{
 				"event": "billing.paid",
 				"data": map[string]any{
-					"id":         fmt.Sprintf("mock_bill_%d", time.Now().Unix()),
+					"id":         fmt.Sprintf("pix_char_%d", time.Now().Unix()),
 					"externalId": "order_123",
 					"amount":     1000,
 					"status":     "PAID",
@@ -118,7 +119,6 @@ func (l *Listener) readLoop(ctx context.Context, conn *websocket.Conn) error {
 		l.connMu.Unlock()
 
 		_, message, err := conn.ReadMessage()
-
 		if err != nil {
 			if websocket.IsCloseError(err, websocket.CloseNormalClosure, websocket.CloseGoingAway) {
 				slog.Info("WebSocket connection closed")
@@ -208,10 +208,12 @@ func (l *Listener) logWebhook(message []byte) {
 		var buf bytes.Buffer
 		if err := json.Indent(&buf, message, "", "  "); err == nil {
 			fmt.Println(buf.String())
-		} else {
-			fmt.Println(string(message))
+
+			return
 		}
 	}
+
+	fmt.Println(string(message))
 }
 
 func (l *Listener) forward(ctx context.Context, message []byte) error {
@@ -237,7 +239,6 @@ func (l *Listener) forward(ctx context.Context, message []byte) error {
 
 	statusCode := resp.StatusCode()
 
-	// Extract event for logging
 	var webhook struct {
 		Event string `json:"event"`
 	}
@@ -266,3 +267,4 @@ func (l *Listener) forward(ctx context.Context, message []byte) error {
 
 	return nil
 }
+
