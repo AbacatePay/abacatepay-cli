@@ -4,6 +4,7 @@ import (
 	"fmt"
 	"sort"
 	"strings"
+	"time"
 
 	"github.com/charmbracelet/huh"
 	"github.com/charmbracelet/lipgloss"
@@ -146,6 +147,32 @@ func PrintError(err string) {
 		Render(
 			ErrorStyle.Render("⚠️  Error") + "\n\n" + lipgloss.NewStyle().Foreground(White).Render(err),
 		))
+}
+
+func LogWebhookReceived(event, id string) {
+	timestamp := time.Now().Format("15:04:05")
+	fmt.Printf("%s  %s %s [%s]\n",
+		lipgloss.NewStyle().Foreground(lipgloss.Color("#808080")).Render(timestamp),
+		lipgloss.NewStyle().Foreground(lipgloss.Color("#5469d4")).Bold(true).Render("-->"),
+		lipgloss.NewStyle().Bold(true).Render(event),
+		lipgloss.NewStyle().Foreground(lipgloss.Color("#808080")).Render(id),
+	)
+}
+
+func LogWebhookForwarded(statusCode int, statusText, event string) {
+	timestamp := time.Now().Format("15:04:05")
+	statusColor := "#24b47e" // Verde para 2xx
+	if statusCode < 200 || statusCode >= 300 {
+		statusColor = "#e63946" // Vermelho para erro
+	}
+
+	fmt.Printf("%s  %s [%d %s] %s\n",
+		lipgloss.NewStyle().Foreground(lipgloss.Color("#808080")).Render(timestamp),
+		lipgloss.NewStyle().Foreground(lipgloss.Color(statusColor)).Bold(true).Render("<--"),
+		statusCode,
+		statusText,
+		event,
+	)
 }
 
 func Select(title string, options map[string]string) (string, error) {

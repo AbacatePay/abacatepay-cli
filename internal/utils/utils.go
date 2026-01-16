@@ -27,6 +27,7 @@ type StartListenerParams struct {
 	Store      auth.TokenStore
 	ForwardURL string
 	Version    string
+	Mock       bool
 }
 
 type Dependencies struct {
@@ -63,11 +64,14 @@ func StartListener(params *StartListenerParams) error {
 	listener := webhook.NewListener(params.Config, params.Client, params.ForwardURL, token, txLogger)
 
 	fmt.Fprintln(os.Stderr)
+	if params.Mock {
+		slog.Info("Running in MOCK mode", "interval", "5s")
+	}
 	slog.Info("Listening for webhooks", "forward_to", params.ForwardURL)
 	fmt.Fprintln(os.Stderr, "Press Ctrl+C to stop")
 	fmt.Fprintln(os.Stderr)
 
-	return listener.Listen(params.Context)
+	return listener.Listen(params.Context, params.Mock)
 }
 
 func GetConfig(local bool) *config.Config {
