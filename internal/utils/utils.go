@@ -37,8 +37,6 @@ type Dependencies struct {
 }
 
 func StartListener(params *StartListenerParams) error {
-	go ShowUpdate(params.Version)
-
 	activeProfile, err := params.Store.GetActiveProfile()
 
 	if err != nil || activeProfile == "" {

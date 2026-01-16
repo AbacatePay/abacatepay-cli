@@ -147,13 +147,13 @@ func PrintSuccess(title string, fields map[string]string) {
 	var sb strings.Builder
 	sb.WriteString(TitleStyle.Render("🥑 "+title) + "\n\n")
 	for label, value := range fields {
-		sb.WriteString(fmt.Sprintf("%s %s\n", LabelStyle.Render(label+":"), ValueStyle.Render(value)))
+		fmt.Fprintf(&sb, "%s %s\n", LabelStyle.Render(label+":"), ValueStyle.Render(value))
 	}
 	fmt.Println(BoxStyle.Render(sb.String()))
 }
 
 func PrintError(err string) {
-	fmt.Println(BoxStyle.Copy().
+	fmt.Println(BoxStyle.
 		BorderForeground(Palette.SoftRed).
 		Padding(0, 1).
 		Render(
@@ -180,14 +180,12 @@ func LogWebhookForwarded(statusCode int, statusText, event string) {
 
 	codeStyle := lipgloss.NewStyle().Foreground(codeColor).Bold(true)
 	bracketStyle := lipgloss.NewStyle().Foreground(Palette.Gray)
-	textStyle := lipgloss.NewStyle().Foreground(Palette.White)
 
-	fmt.Printf("%s  %s %s%s %s%s %s\n",
+	fmt.Printf("%s  %s %s%s%s %s\n",
 		lipgloss.NewStyle().Foreground(Palette.Gray).Render(timestamp),
 		lipgloss.NewStyle().Foreground(Palette.Green).Bold(true).Render("<--"),
 		bracketStyle.Render("["),
 		codeStyle.Render(fmt.Sprintf("%d", statusCode)),
-		textStyle.Render(statusText),
 		bracketStyle.Render("]"),
 		lipgloss.NewStyle().Bold(true).Render(event),
 	)

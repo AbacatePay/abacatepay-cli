@@ -24,6 +24,11 @@ type Message struct {
 	Data  json.RawMessage `json:"data"`
 }
 
+type webhookMetadata struct {
+	Event string
+	ID    string
+}
+
 type Listener struct {
 	cfg        *config.Config
 	client     *resty.Client
@@ -72,12 +77,14 @@ func (l *Listener) mockListen(ctx context.Context) error {
 		select {
 		case <-ctx.Done():
 			return nil
-
 		case <-ticker.C:
+			id := fmt.Sprintf("pix_char_%d", time.Now().Unix())
+			event := "billing.paid"
+
 			mockData := map[string]any{
-				"event": "billing.paid",
+				"event": event,
 				"data": map[string]any{
-					"id":         fmt.Sprintf("pix_char_%d", time.Now().Unix()),
+					"id":         id,
 					"externalId": "order_123",
 					"amount":     1000,
 					"status":     "PAID",
@@ -85,11 +92,11 @@ func (l *Listener) mockListen(ctx context.Context) error {
 			}
 
 			message, _ := json.Marshal(mockData)
-			l.logWebhook(message)
+			l.displayWebhook(webhookMetadata{Event: event, ID: id}, message)
 
-			if err := l.forward(ctx, message); err != nil {
-				slog.Error("Mock webhook forward failed", "error", err)
-			}
+			go func() {
+				_ = l.forward(ctx, message, event)
+			}()
 		}
 	}
 }
@@ -135,12 +142,23 @@ func (l *Listener) readLoop(ctx context.Context, conn *websocket.Conn) error {
 			return fmt.Errorf("failed to read websocket message: %w", err)
 		}
 
-		l.logWebhook(message)
+		var raw struct {
+			Event string `json:"event"`
+			Data  struct {
+				ID string `json:"id"`
+			} `json:"data"`
+		}
+
+		if err := json.Unmarshal(message, &raw); err != nil {
+			style.PrintError("Received invalid JSON from WebSocket")
+			continue
+		}
+
+		meta := webhookMetadata{Event: raw.Event, ID: raw.Data.ID}
+		l.displayWebhook(meta, message)
 
 		g.Go(func() error {
-			if err := l.forward(gCtx, message); err != nil {
-				slog.Error("Webhook forward failed", "error", err)
-			}
+			_ = l.forward(gCtx, message, meta.Event)
 			return nil
 		})
 	}
@@ -183,40 +201,26 @@ func (l *Listener) heartbeat(ctx context.Context, conn *websocket.Conn) error {
 	}
 }
 
-func (l *Listener) logWebhook(message []byte) {
-	var webhook struct {
-		Event string `json:"event"`
-		Data  struct {
-			ID string `json:"id"`
-		} `json:"data"`
-	}
-
-	if err := json.Unmarshal(message, &webhook); err != nil {
-		fmt.Println(string(message))
-		return
-	}
-
-	style.LogWebhookReceived(webhook.Event, webhook.Data.ID)
+func (l *Listener) displayWebhook(meta webhookMetadata, rawBody []byte) {
+	style.LogWebhookReceived(meta.Event, meta.ID)
 
 	l.txLogger.Info("webhook_received",
 		"timestamp", time.Now().Format(time.RFC3339),
-		"size_bytes", len(message),
-		"raw_message", string(message),
+		"size_bytes", len(rawBody),
+		"raw_message", string(rawBody),
 	)
 
 	if l.cfg.Verbose {
 		var buf bytes.Buffer
-		if err := json.Indent(&buf, message, "", "  "); err == nil {
+		if err := json.Indent(&buf, rawBody, "", "  "); err == nil {
 			fmt.Println(buf.String())
-
-			return
+		} else {
+			fmt.Println(string(rawBody))
 		}
 	}
-
-	fmt.Println(string(message))
 }
 
-func (l *Listener) forward(ctx context.Context, message []byte) error {
+func (l *Listener) forward(ctx context.Context, message []byte, event string) error {
 	startTime := time.Now()
 
 	resp, err := l.client.R().
@@ -238,13 +242,7 @@ func (l *Listener) forward(ctx context.Context, message []byte) error {
 	}
 
 	statusCode := resp.StatusCode()
-
-	var webhook struct {
-		Event string `json:"event"`
-	}
-	_ = json.Unmarshal(message, &webhook)
-
-	style.LogWebhookForwarded(statusCode, http.StatusText(statusCode), webhook.Event)
+	style.LogWebhookForwarded(statusCode, http.StatusText(statusCode), event)
 
 	if statusCode < 200 || statusCode >= 300 {
 		l.txLogger.Error("webhook_forward_error",
@@ -254,7 +252,7 @@ func (l *Listener) forward(ctx context.Context, message []byte) error {
 			"response_body", string(resp.Body()),
 			"timestamp", time.Now().Format(time.RFC3339),
 		)
-		return fmt.Errorf("failed to forward webhook: server returned %d", statusCode)
+		return nil
 	}
 
 	l.txLogger.Info("webhook_forwarded",
