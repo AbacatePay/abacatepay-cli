@@ -3,54 +3,19 @@ package webhook
 import (
 	"bytes"
 	"context"
-	"encoding/hex"
 	"encoding/json"
 	"fmt"
 	"log/slog"
 	"net/http"
-	"sync"
 	"time"
 
-	"abacatepay-cli/internal/config"
+	"abacatepay-cli/internal/crypto"
 	"abacatepay-cli/internal/style"
-	"abacatepay-cli/internal/utils"
 	"abacatepay-cli/internal/ws"
 
-	"github.com/go-resty/resty/v2"
 	"github.com/gorilla/websocket"
 	"golang.org/x/sync/errgroup"
 )
-
-type Message struct {
-	Event string          `json:"event"`
-	Data  json.RawMessage `json:"data"`
-}
-
-type webhookMetadata struct {
-	Event string
-	ID    string
-}
-
-type Listener struct {
-	cfg           *config.Config
-	client        *resty.Client
-	forwardURL    string
-	token         string
-	txLogger      *slog.Logger
-	connMu        sync.Mutex
-	signingSecret string
-}
-
-func NewListener(cfg *config.Config, client *resty.Client, forwardURL, token string, txLogger *slog.Logger) *Listener {
-	return &Listener{
-		cfg:           cfg,
-		client:        client,
-		forwardURL:    forwardURL,
-		token:         token,
-		txLogger:      txLogger,
-		signingSecret: "whsec_mock_" + hex.EncodeToString([]byte(time.Now().Format("150405"))),
-	}
-}
 
 func (l *Listener) Listen(ctx context.Context, mock bool) error {
 	if mock {
@@ -169,14 +134,6 @@ func (l *Listener) readLoop(ctx context.Context, conn *websocket.Conn) error {
 	}
 }
 
-func (l *Listener) SetupConn(conn *websocket.Conn) {
-	conn.SetPongHandler(func(string) error {
-		l.connMu.Lock()
-		defer l.connMu.Unlock()
-		return conn.SetReadDeadline(time.Now().Add(90 * time.Second))
-	})
-}
-
 func (l *Listener) heartbeat(ctx context.Context, conn *websocket.Conn) error {
 	ticker := time.NewTicker(30 * time.Second)
 	defer ticker.Stop()
@@ -229,7 +186,7 @@ func (l *Listener) forward(ctx context.Context, message []byte, event string) er
 	startTime := time.Now()
 	timestamp := time.Now().Unix()
 
-	signature := utils.SignWebhookPayload(l.signingSecret, timestamp, message)
+	signature := crypto.SignWebhookPayload(l.signingSecret, timestamp, message)
 
 	resp, err := l.client.R().
 		SetContext(ctx).
