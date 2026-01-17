@@ -32,11 +32,11 @@ func logs(args []string) error {
 		return err
 	}
 
-	ctx, cancel := signal.NotifyContext(context.Background(), os.Interrupt, syscall.SIGTERM)
+	_, cancel := signal.NotifyContext(context.Background(), os.Interrupt, syscall.SIGTERM)
 
 	defer cancel()
 
-	txLogger, err := utils.SetupTra
+	txLogger, err := utils.SetupTransactionLogger()
 	webhook.NewListener(deps.Config, deps.Client, forwardURL, deps.Config.TokenKey, txLogger)
 
 	return nil
