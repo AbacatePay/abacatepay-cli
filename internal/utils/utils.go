@@ -25,6 +25,7 @@ type StartListenerParams struct {
 	Config     *config.Config
 	Client     *resty.Client
 	Store      auth.TokenStore
+	Token      string
 	ForwardURL string
 	Version    string
 	Mock       bool
@@ -36,30 +37,22 @@ type Dependencies struct {
 	Store  auth.TokenStore
 }
 
-func StartListener(params *StartListenerParams) error {
-	activeProfile, err := params.Store.GetActiveProfile()
-
-	if err != nil || activeProfile == "" {
-		return fmt.Errorf("no active profile found")
-	}
-
-	token, err := params.Store.GetNamed(activeProfile)
-
-	if err != nil || token == "" {
-		return fmt.Errorf("couldn’t load token for profile '%s'", activeProfile)
-	}
-
+func SetupTransactionLogger() (*slog.Logger, error) {
 	logCfg, err := logger.DefaultConfig()
 	if err != nil {
-		return fmt.Errorf("failed to configure logger: %w", err)
+		return nil, fmt.Errorf("failed to configure logger: %w", err)
 	}
 
-	txLogger, err := logger.NewTransactionLogger(logCfg)
+	return logger.NewTransactionLogger(logCfg)
+}
+
+func StartListener(params *StartListenerParams) error {
+	txLogger, err := SetupTransactionLogger()
 	if err != nil {
 		return fmt.Errorf("failed to initialize transaction logger: %w", err)
 	}
 
-	listener := webhook.NewListener(params.Config, params.Client, params.ForwardURL, token, txLogger)
+	listener := webhook.NewListener(params.Config, params.Client, params.ForwardURL, params.Token, txLogger)
 
 	fmt.Fprintln(os.Stderr)
 	if params.Mock {

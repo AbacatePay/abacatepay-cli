@@ -23,22 +23,17 @@ func init() {
 }
 
 func whoami() error {
-	deps := utils.SetupDependencies(Local, Verbose)
-	activeProfile, err := deps.Store.GetActiveProfile()
-
-	if err != nil || activeProfile == "" {
-		return fmt.Errorf("no active profile found. Please login first")
+	deps, err := utils.SetupClient(Local, Verbose)
+	if err != nil {
+		return err
 	}
 
-	token, err := deps.Store.GetNamed(activeProfile)
-
-	if err != nil || token == "" {
-		return fmt.Errorf("token not found for active profile: %s", activeProfile)
-	}
+	activeProfile, _ := deps.Store.GetActiveProfile()
+	token, _ := deps.Store.GetNamed(activeProfile)
 
 	user, err := auth.ValidateToken(deps.Client, deps.Config.APIBaseURL, token)
 	if err != nil {
-		return fmt.Errorf("session expired for profile %s: %w", activeProfile, err)
+		return fmt.Errorf("session expired: %w", err)
 	}
 
 	output.Print(output.Result{

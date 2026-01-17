@@ -38,15 +38,14 @@ func listen(cmd *cobra.Command) error {
 	var token string
 
 	if !listenMock {
-		activeProfile, err := deps.Store.GetActiveProfile()
-		if err != nil || activeProfile == "" {
-			return fmt.Errorf("you’re not logged in — run `abacatepay login` to continue")
+		var err error
+		deps, err = utils.SetupClient(Local, Verbose)
+		if err != nil {
+			return err
 		}
 
-		token, err = deps.Store.GetNamed(activeProfile)
-		if err != nil || token == "" {
-			return fmt.Errorf("this profile doesn’t have a valid token — try logging in again")
-		}
+		profile, _ := deps.Store.GetActiveProfile()
+		token, _ = deps.Store.GetNamed(profile)
 	}
 
 	defaultURL := "http://localhost:3000/webhooks/abacatepay"
@@ -71,6 +70,7 @@ func listen(cmd *cobra.Command) error {
 		Client:     deps.Client,
 		ForwardURL: forwardURL,
 		Store:      deps.Store,
+		Token:      token,
 		Version:    cmd.Root().Version,
 		Mock:       listenMock,
 	}
