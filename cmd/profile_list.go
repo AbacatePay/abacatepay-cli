@@ -4,7 +4,6 @@ import (
 	"fmt"
 
 	"abacatepay-cli/internal/output"
-	"abacatepay-cli/internal/style"
 	"abacatepay-cli/internal/utils"
 
 	"github.com/spf13/cobra"
@@ -46,52 +45,21 @@ func listProfiles() error {
 				"active":   "",
 			},
 		})
+
 		return nil
 	}
 
-	profileData := make([]map[string]any, 0, len(profiles))
-	rows := make([][]string, 0, len(profiles))
-
-	for _, p := range profiles {
-		token, _ := deps.Store.GetNamed(p)
-		isActive := p == active
-
-		shortKey := ""
-		if token != "" && len(token) > 10 {
-			shortKey = token[:10] + "..."
-		}
-
-		activeMarker := ""
-		if isActive {
-			activeMarker = "Yes"
-		}
-
-		rows = append(rows, []string{p, shortKey, activeMarker})
-		profileData = append(profileData, map[string]any{
-			"name":   p,
-			"active": isActive,
+	outputProfiles := make([]output.Profile, 0, len(profiles))
+	for _, name := range profiles {
+		token, _ := deps.Store.GetNamed(name)
+		outputProfiles = append(outputProfiles, output.Profile{
+			Name:   name,
+			Token:  token,
+			Active: name == active,
 		})
 	}
 
-	if output.GetFormat() == output.FormatText {
-		profileMap := make(map[string]string)
-		for _, p := range profiles {
-			token, _ := deps.Store.GetNamed(p)
-			profileMap[p] = token
-		}
-		style.ProfileSimpleList(profileMap, active)
-		return nil
-	}
-
-	output.Print(output.Result{
-		Title:   "Profiles",
-		Headers: []string{"Name", "API Key", "Active"},
-		Rows:    rows,
-		Data: map[string]any{
-			"profiles": profileData,
-			"active":   active,
-		},
-	})
+	output.PrintProfiles(outputProfiles, active)
 
 	return nil
 }

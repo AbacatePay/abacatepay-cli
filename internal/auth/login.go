@@ -8,11 +8,12 @@ import (
 	"os"
 	"time"
 
-	"github.com/briandowns/spinner"
-
 	"github.com/go-resty/resty/v2"
 
 	"abacatepay-cli/internal/config"
+	"abacatepay-cli/internal/style"
+
+	//"abacatepay-cli/internal/style"
 	"abacatepay-cli/internal/types"
 )
 
@@ -35,7 +36,6 @@ func Login(params *LoginParams) error {
 
 	if params.APIKey != "" {
 		user, err := ValidateToken(params.Client, params.Config.APIBaseURL, params.APIKey)
-
 		if err != nil {
 			return err
 		}
@@ -60,7 +60,6 @@ func Login(params *LoginParams) error {
 	}
 
 	host, err := os.Hostname()
-
 	if err != nil {
 		host = "unknown"
 	}
@@ -72,7 +71,6 @@ func Login(params *LoginParams) error {
 		SetBody(map[string]string{"host": host}).
 		SetResult(&result).
 		Post(params.Config.APIBaseURL + "/device-login")
-
 	if err != nil {
 		return fmt.Errorf("login request failed: %w", err)
 	}
@@ -103,13 +101,11 @@ func Login(params *LoginParams) error {
 	}
 
 	token, err := pollForToken(params.Context, params.Config, params.Client, result.DeviceCode)
-
 	if err != nil {
 		return err
 	}
 
 	user, err := ValidateToken(params.Client, params.Config.APIBaseURL, token)
-
 	if err != nil {
 		return err
 	}
@@ -143,18 +139,14 @@ func Logout(store TokenStore) error {
 }
 
 func pollForToken(ctx context.Context, cfg *config.Config, client *resty.Client, deviceCode string) (string, error) {
-	s := spinner.New(spinner.CharSets[14], 100*time.Millisecond)
-	s.Suffix = "Waiting for authorization..."
-
-	s.Start()
-
+	s := style.Spinner()
 	defer s.Stop()
 
-	ticker := time.NewTicker(cfg.PollInterval)
+	ticker := time.NewTicker(2 * time.Second)
 
 	defer ticker.Stop()
 
-	for retries := 0; retries < cfg.MaxRetries; retries++ {
+	for range 150 {
 		select {
 		case <-ctx.Done():
 			return "", ctx.Err()
@@ -168,7 +160,6 @@ func pollForToken(ctx context.Context, cfg *config.Config, client *resty.Client,
 			SetBody(map[string]string{"deviceCode": deviceCode}).
 			SetResult(&result).
 			Post(cfg.APIBaseURL + "/token")
-
 		if err != nil {
 			slog.Debug("Token request failed", "error", err)
 
@@ -195,4 +186,7 @@ func pollForToken(ctx context.Context, cfg *config.Config, client *resty.Client,
 	}
 
 	return "", fmt.Errorf("authorization timed out")
+}
+
+func retryConnection(cfg *config.Config) {
 }

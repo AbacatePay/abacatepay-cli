@@ -75,3 +75,4 @@ func ConnectWithRetry(ctx context.Context, cfg Config, handler Handler) error {
 		conn.Close()
 	}
 }
+

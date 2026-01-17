@@ -6,6 +6,7 @@ import (
 	"strings"
 	"time"
 
+	"github.com/briandowns/spinner"
 	"github.com/charmbracelet/huh"
 	"github.com/charmbracelet/lipgloss"
 	"github.com/charmbracelet/lipgloss/table"
@@ -61,6 +62,15 @@ var (
 			MarginTop(1).
 			MarginBottom(1)
 )
+
+func Spinner() *spinner.Spinner {
+	s := spinner.New(spinner.CharSets[14], 100*time.Millisecond)
+	s.Suffix = " Waiting for authorization..."
+
+	s.Start()
+
+	return s
+}
 
 func AbacateTheme() *huh.Theme {
 	t := huh.ThemeBase()
