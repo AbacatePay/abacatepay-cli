@@ -191,6 +191,13 @@ func LogWebhookForwarded(statusCode int, statusText, event string) {
 	)
 }
 
+func LogSigningSecret(secret string) {
+	fmt.Printf("%s Your webhook signing secret is %s\n",
+		lipgloss.NewStyle().Foreground(Palette.Green).Bold(true).Render(">"),
+		lipgloss.NewStyle().Bold(true).Render(secret),
+	)
+}
+
 func Select(title string, options map[string]string) (string, error) {
 	var result string
 	huhOptions := make([]huh.Option[string], 0, len(options))

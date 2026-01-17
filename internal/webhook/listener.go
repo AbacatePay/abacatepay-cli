@@ -3,6 +3,7 @@ package webhook
 import (
 	"bytes"
 	"context"
+	"encoding/hex"
 	"encoding/json"
 	"fmt"
 	"log/slog"
@@ -12,6 +13,7 @@ import (
 
 	"abacatepay-cli/internal/config"
 	"abacatepay-cli/internal/style"
+	"abacatepay-cli/internal/utils"
 	"abacatepay-cli/internal/ws"
 
 	"github.com/go-resty/resty/v2"
@@ -30,26 +32,29 @@ type webhookMetadata struct {
 }
 
 type Listener struct {
-	cfg        *config.Config
-	client     *resty.Client
-	forwardURL string
-	token      string
-	txLogger   *slog.Logger
-	connMu     sync.Mutex
+	cfg           *config.Config
+	client        *resty.Client
+	forwardURL    string
+	token         string
+	txLogger      *slog.Logger
+	connMu        sync.Mutex
+	signingSecret string
 }
 
 func NewListener(cfg *config.Config, client *resty.Client, forwardURL, token string, txLogger *slog.Logger) *Listener {
 	return &Listener{
-		cfg:        cfg,
-		client:     client,
-		forwardURL: forwardURL,
-		token:      token,
-		txLogger:   txLogger,
+		cfg:           cfg,
+		client:        client,
+		forwardURL:    forwardURL,
+		token:         token,
+		txLogger:      txLogger,
+		signingSecret: "whsec_mock_" + hex.EncodeToString([]byte(time.Now().Format("150405"))),
 	}
 }
 
 func (l *Listener) Listen(ctx context.Context, mock bool) error {
 	if mock {
+		style.LogSigningSecret(l.signingSecret)
 		return l.mockListen(ctx)
 	}
 
@@ -222,10 +227,14 @@ func (l *Listener) displayWebhook(meta webhookMetadata, rawBody []byte) {
 
 func (l *Listener) forward(ctx context.Context, message []byte, event string) error {
 	startTime := time.Now()
+	timestamp := time.Now().Unix()
+
+	signature := utils.SignWebhookPayload(l.signingSecret, timestamp, message)
 
 	resp, err := l.client.R().
 		SetContext(ctx).
 		SetHeader("Content-Type", "application/json").
+		SetHeader("X-Abacate-Signature", fmt.Sprintf("t=%d,v1=%s", timestamp, signature)).
 		SetBody(message).
 		Post(l.forwardURL)
 
@@ -265,4 +274,3 @@ func (l *Listener) forward(ctx context.Context, message []byte, event string) er
 
 	return nil
 }
-
