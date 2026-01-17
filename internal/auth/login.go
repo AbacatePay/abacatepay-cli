@@ -13,7 +13,6 @@ import (
 	"abacatepay-cli/internal/config"
 	"abacatepay-cli/internal/style"
 
-	//"abacatepay-cli/internal/style"
 	"abacatepay-cli/internal/types"
 )
 
@@ -28,41 +27,34 @@ type LoginParams struct {
 }
 
 func Login(params *LoginParams) error {
-	profile := params.ProfileName
-
-	if profile == "" {
-		profile = fmt.Sprintf("profile-%d", time.Now().Unix()%10000)
+	if params.ProfileName == "" {
+		params.ProfileName = fmt.Sprintf("profile-%d", time.Now().Unix()%10000)
 	}
 
 	if params.APIKey != "" {
-		user, err := ValidateToken(params.Client, params.Config.APIBaseURL, params.APIKey)
-		if err != nil {
-			return err
-		}
-
-		existingToken, _ := params.Store.GetNamed(profile)
-		if existingToken != "" {
-			slog.Info("Updating existing profile", "name", profile)
-		}
-
-		if err := params.Store.SaveNamed(profile, params.APIKey); err != nil {
-			return fmt.Errorf("failed to store API key: %w", err)
-		}
-
-		if err := params.Store.SetActiveProfile(profile); err != nil {
-			return fmt.Errorf("failed to activate profile: %w", err)
-		}
-
-		fmt.Printf("Welcome back, %s\nProfile: %s\n", user.Name, profile)
-
-		return nil
-
+		return loginWithAPIKey(params)
 	}
 
-	host, err := os.Hostname()
+	return loginWithDeviceFlow(params)
+}
+
+func loginWithAPIKey(params *LoginParams) error {
+	user, err := ValidateToken(params.Client, params.Config.APIBaseURL, params.APIKey)
 	if err != nil {
-		host = "unknown"
+		return err
 	}
+
+	if err := saveAndActivateProfile(params.Store, params.ProfileName, params.APIKey); err != nil {
+		return err
+	}
+
+	fmt.Printf("Welcome back, %s\nProfile: %s\n", user.Name, params.ProfileName)
+
+	return nil
+}
+
+func loginWithDeviceFlow(params *LoginParams) error {
+	host := getHostname()
 
 	var result types.DeviceLoginResponse
 
@@ -79,23 +71,7 @@ func Login(params *LoginParams) error {
 		return fmt.Errorf("login failed (status %d)", resp.StatusCode())
 	}
 
-	tryOpen := func() bool {
-		if params.OpenBrowser == nil {
-			return false
-		}
-
-		if err := params.OpenBrowser(result.VerificationURI); err != nil {
-			slog.Debug("Unable to open browser automatically", "error", err)
-
-			return false
-		}
-
-		fmt.Printf("Opening browser: %s\n", result.VerificationURI)
-
-		return true
-	}
-
-	if !tryOpen() {
+	if !tryOpenBrowser(params, result.VerificationURI) {
 		fmt.Println("Open the link below to continue authentication:")
 		fmt.Printf("%s\n", result.VerificationURI)
 	}
@@ -110,22 +86,54 @@ func Login(params *LoginParams) error {
 		return err
 	}
 
-	existingToken, _ := params.Store.GetNamed(profile)
+	if err := saveAndActivateProfile(params.Store, params.ProfileName, token); err != nil {
+		return err
+	}
+
+	fmt.Printf("Authenticated as %s\nProfile: %s\n", user.Name, params.ProfileName)
+
+	return nil
+}
+
+func saveAndActivateProfile(store TokenStore, profile, token string) error {
+	existingToken, _ := store.GetNamed(profile)
 	if existingToken != "" {
 		slog.Info("Updating existing profile", "name", profile)
 	}
 
-	if err := params.Store.SaveNamed(profile, token); err != nil {
+	if err := store.SaveNamed(profile, token); err != nil {
 		return fmt.Errorf("failed to store API key: %w", err)
 	}
 
-	if err := params.Store.SetActiveProfile(profile); err != nil {
+	if err := store.SetActiveProfile(profile); err != nil {
 		return fmt.Errorf("failed to activate profile: %w", err)
 	}
 
-	fmt.Printf("Authenticated as %s\nProfile: %s\n", user.Name, profile)
-
 	return nil
+}
+
+func tryOpenBrowser(params *LoginParams, verificationURI string) bool {
+	if params.OpenBrowser == nil {
+		return false
+	}
+
+	if err := params.OpenBrowser(verificationURI); err != nil {
+		slog.Debug("Unable to open browser automatically", "error", err)
+
+		return false
+	}
+
+	fmt.Printf("Opening browser: %s\n", verificationURI)
+
+	return true
+}
+
+func getHostname() string {
+	host, err := os.Hostname()
+	if err != nil {
+		return "unknown"
+	}
+	return host
 }
 
 func Logout(store TokenStore) error {
@@ -186,7 +194,4 @@ func pollForToken(ctx context.Context, cfg *config.Config, client *resty.Client,
 	}
 
 	return "", fmt.Errorf("authorization timed out")
-}
-
-func retryConnection(cfg *config.Config) {
 }
