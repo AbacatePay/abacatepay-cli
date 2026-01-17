@@ -4,8 +4,8 @@ import (
 	"errors"
 
 	"abacatepay-cli/internal/mock"
+	"abacatepay-cli/internal/output"
 	"abacatepay-cli/internal/payments"
-	"abacatepay-cli/internal/style"
 	"abacatepay-cli/internal/utils"
 
 	v1 "github.com/almeidazs/go-abacate-types/v1"
@@ -58,8 +58,15 @@ func handleEvent(deps *utils.Dependencies, evt string) error {
 			return err
 		}
 
-		style.PrintSuccess("Billing.paid Triggered", map[string]string{
-			"ID": pixID,
+		output.Print(output.Result{
+			Title: "Billing.paid Triggered",
+			Fields: map[string]string{
+				"ID": pixID,
+			},
+			Data: map[string]any{
+				"event": evt,
+				"id":    pixID,
+			},
 		})
 
 		return nil

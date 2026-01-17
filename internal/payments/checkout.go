@@ -1,9 +1,10 @@
 package payments
 
 import (
-	"abacatepay-cli/internal/style"
-	"abacatepay-cli/internal/types"
 	"fmt"
+
+	"abacatepay-cli/internal/output"
+	"abacatepay-cli/internal/types"
 )
 
 func (s *Service) CreateCheckout(body *types.CreateCheckoutRequest) error {
@@ -18,11 +19,15 @@ func (s *Service) CreateCheckout(body *types.CreateCheckoutRequest) error {
 		return err
 	}
 
-	style.PrintSuccess("Checkout Created", map[string]string{
-		"ID":     result.Data.ID,
-		"URL":    result.Data.URL,
-		"Amount": fmt.Sprintf("R$ %.2f", float64(result.Data.Amount)/100),
-		"Status": result.Data.Status,
+	output.Print(output.Result{
+		Title: "Checkout Created",
+		Fields: map[string]string{
+			"ID":     result.Data.ID,
+			"URL":    result.Data.URL,
+			"Amount": fmt.Sprintf("R$ %.2f", float64(result.Data.Amount)/100),
+			"Status": result.Data.Status,
+		},
+		Data: result,
 	})
 
 	return nil

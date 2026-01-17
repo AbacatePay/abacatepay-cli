@@ -8,7 +8,7 @@ import (
 
 var logsCmd = &cobra.Command{
 	Use:   "logs",
-	Short: "",
+	Short: "Display recent webhook transaction logs",
 	RunE: func(cmd *cobra.Command, args []string) error {
 		return logs()
 	},
@@ -19,7 +19,7 @@ func init() {
 }
 
 func logs() error {
-	deps, err := utils.SetupClient(Local, Verbose)
+	_, err := utils.SetupClient(Local, Verbose)
 	if err != nil {
 		return err
 	}

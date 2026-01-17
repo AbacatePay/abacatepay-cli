@@ -1,11 +1,12 @@
 package payments
 
 import (
-	"abacatepay-cli/internal/style"
-	"abacatepay-cli/internal/types"
 	"encoding/json"
 	"fmt"
 	"net/http"
+
+	"abacatepay-cli/internal/output"
+	"abacatepay-cli/internal/types"
 
 	"github.com/go-resty/resty/v2"
 )
@@ -61,13 +62,13 @@ func (s *Service) handleAPIError(resp *resty.Response) error {
 
 	switch resp.StatusCode() {
 	case http.StatusUnauthorized:
-		style.PrintError("Session expired or invalid API Key. Please login again.")
+		output.Error("Session expired or invalid API Key. Please login again.")
 	case http.StatusTooManyRequests:
-		style.PrintError("Too many requests. Please slow down.")
+		output.Error("Too many requests. Please slow down.")
 	case http.StatusInternalServerError:
-		style.PrintError("Server error. Please try again later.")
+		output.Error("Server error. Please try again later.")
 	default:
-		style.PrintError(errorMessage)
+		output.Error(errorMessage)
 	}
 
 	return fmt.Errorf("API Error: %s", errorMessage)

@@ -4,6 +4,7 @@ import (
 	"fmt"
 
 	"abacatepay-cli/internal/auth"
+	"abacatepay-cli/internal/output"
 	"abacatepay-cli/internal/utils"
 
 	"github.com/spf13/cobra"
@@ -40,10 +41,21 @@ func whoami() error {
 		return fmt.Errorf("session expired for profile %s: %w", activeProfile, err)
 	}
 
-	fmt.Printf("● Active Profile: %s\n", activeProfile)
-	fmt.Printf("● User:           %s\n", user.Name)
-	fmt.Printf("● Email:          %s\n", user.Email)
-	fmt.Printf("● Status:         Authenticated ✅\n")
+	output.Print(output.Result{
+		Title: "User Information",
+		Fields: map[string]string{
+			"Profile": activeProfile,
+			"User":    user.Name,
+			"Email":   user.Email,
+			"Status":  "Authenticated",
+		},
+		Data: map[string]any{
+			"profile": activeProfile,
+			"user":    user.Name,
+			"email":   user.Email,
+			"status":  "authenticated",
+		},
+	})
 
 	return nil
 }
