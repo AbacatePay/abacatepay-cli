@@ -9,6 +9,8 @@ import (
 )
 
 type LogEntry struct {
+	ID         string `json:"id"`
+	Event      string `json:"event"`
 	Time       string `json:"time"`
 	Level      string `json:"level"`
 	Msg        string `json:"msg"`
@@ -80,4 +82,37 @@ func ReadTransactionLogs(opts ReadOptions) ([]LogEntry, error) {
 	}
 
 	return entries, nil
+}
+
+func FindLogEntryByID(id string) (*LogEntry, error) {
+	logPath, err := GetLogFilePath()
+	if err != nil {
+		return nil, err
+	}
+
+	file, err := os.Open(logPath)
+	if err != nil {
+		return nil, fmt.Errorf("failed to open log file: %w", err)
+	}
+	defer file.Close()
+
+	scanner := bufio.NewScanner(file)
+
+	for scanner.Scan() {
+		line := scanner.Text()
+		if line == "" {
+			continue
+		}
+
+		var entry LogEntry
+		if err := json.Unmarshal([]byte(line), &entry); err != nil {
+			continue
+		}
+
+		if entry.ID == id {
+			return &entry, nil
+		}
+	}
+
+	return nil, fmt.Errorf("event with ID %s not found in local logs", id)
 }
