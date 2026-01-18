@@ -82,17 +82,10 @@ func listen(cmd *cobra.Command) error {
 		Mock:       listenMock,
 	}
 
-	if err := utils.StartListener(params); err != nil {
-		return fmt.Errorf("couldn’t start the webhook listener: %w", err)
+	err = utils.StartListener(params)
+	if err != nil {
+		return fmt.Errorf("couldn't start the webhook listener: %w", err)
 	}
-
-	fmt.Printf("Forwarding events to %s\n\n", forwardURL)
-	fmt.Println("Press Ctrl+C to stop")
-
-	go func() {
-		<-ctx.Done()
-		fmt.Println("\nListener stopped")
-	}()
 
 	return nil
 }

@@ -24,5 +24,10 @@ func StartListener(params *StartListenerParams) error {
 	fmt.Fprintln(os.Stderr, "Press Ctrl+C to stop")
 	fmt.Fprintln(os.Stderr)
 
-	return listener.Listen(params.Context, params.Mock)
+	err = listener.Listen(params.Context, params.Mock)
+
+	fmt.Fprintln(os.Stderr)
+	slog.Info("Listener stopped")
+
+	return err
 }
