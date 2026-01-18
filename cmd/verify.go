@@ -98,16 +98,7 @@ func verify() error {
 	}
 
 	if !isValid {
-		style.PrintError("Signature mismatch ❌")
-
-		fmt.Println("Debug Analysis:")
-		fmt.Println("---------------")
-		fmt.Printf("Expected: %s\n", expectedSig)
-		fmt.Printf("Received: %s\n", receivedSig)
-		fmt.Println("\nCommon causes for mismatch:")
-		fmt.Println("1. Payload content differs (check for extra spaces, newlines, or formatting).")
-		fmt.Println("2. Wrong secret key used.")
-		fmt.Println("3. Timestamp manipulation.")
+		style.PrintVerifyError(expectedSig, receivedSig)
 		return nil
 	}
 

@@ -171,6 +171,22 @@ func PrintError(err string) {
 		))
 }
 
+func PrintVerifyError(expected, received string) {
+	var sb strings.Builder
+	sb.WriteString(ErrorStyle.Render("⚠️  Signature mismatch") + "\n\n")
+
+	sb.WriteString(lipgloss.NewStyle().Bold(true).Render("Debug Analysis:") + "\n")
+	sb.WriteString(fmt.Sprintf("%s %s\n", LabelStyle.Render("Expected:"), ValueStyle.Render(expected)))
+	sb.WriteString(fmt.Sprintf("%s %s\n\n", LabelStyle.Render("Received:"), ValueStyle.Render(received)))
+
+	sb.WriteString(lipgloss.NewStyle().Bold(true).Render("Common causes for mismatch:") + "\n")
+	sb.WriteString(lipgloss.NewStyle().Foreground(Palette.White).Render("1. Payload content differs (check for extra spaces, newlines, or formatting).") + "\n")
+	sb.WriteString(lipgloss.NewStyle().Foreground(Palette.White).Render("2. Wrong secret key used.") + "\n")
+	sb.WriteString(lipgloss.NewStyle().Foreground(Palette.White).Render("3. Timestamp manipulation."))
+
+	fmt.Println(BoxStyle.BorderForeground(Palette.SoftRed).Render(sb.String()))
+}
+
 func LogWebhookReceived(event, id string) {
 	timestamp := time.Now().Format("15:04:05")
 	fmt.Printf("%s  %s %s [%s]\n",
