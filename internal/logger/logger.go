@@ -21,7 +21,6 @@ type Config struct {
 
 func DefaultConfig() (*Config, error) {
 	homeDir, err := os.UserHomeDir()
-
 	if err != nil {
 		return nil, fmt.Errorf("failed to resolve home directory: %w", err)
 	}

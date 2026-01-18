@@ -7,55 +7,57 @@ import (
 	"fmt"
 	"log/slog"
 	"net/http"
-	"sync"
 	"time"
 
-	"github.com/go-resty/resty/v2"
+	"abacatepay-cli/internal/crypto"
+	"abacatepay-cli/internal/style"
+	"abacatepay-cli/internal/ws"
+
 	"github.com/gorilla/websocket"
 	"golang.org/x/sync/errgroup"
-
-	"abacatepay-cli/internal/config"
-	"abacatepay-cli/internal/ws"
 )
 
-type Message struct {
-	Event string          `json:"event"`
-	Data  json.RawMessage `json:"data"`
-}
-
-type Listener struct {
-	cfg        *config.Config
-	client     *resty.Client
-	forwardURL string
-	token      string
-	txLogger   *slog.Logger
-	connMu     sync.Mutex
-}
-
-func NewListener(cfg *config.Config, client *resty.Client, forwardURL, token string, txLogger *slog.Logger) *Listener {
-	return &Listener{
-		cfg:        cfg,
-		client:     client,
-		forwardURL: forwardURL,
-		token:      token,
-		txLogger:   txLogger,
+func (l *Listener) Listen(ctx context.Context, mock bool) error {
+	if mock {
+		style.LogSigningSecret(l.signingSecret)
+		return l.mockListen(ctx)
 	}
-}
 
-func (l *Listener) Listen(ctx context.Context) error {
 	slog.Info("Starting webhook listener...")
 
-	header := http.Header{}
-	header.Add("Authorization", "Bearer "+l.token)
+	return ws.ConnectWithRetry(ctx, l.WSConfig(), l.readLoop)
+}
 
-	cfg := ws.Config{
-		URL:        l.cfg.WebSocketBaseURL,
-		Headers:    header,
-		MinBackoff: 1 * time.Second,
-		MaxBackoff: 30 * time.Second,
+func (l *Listener) mockListen(ctx context.Context) error {
+	ticker := time.NewTicker(5 * time.Second)
+	defer ticker.Stop()
+
+	for {
+		select {
+		case <-ctx.Done():
+			return nil
+		case <-ticker.C:
+			id := fmt.Sprintf("pix_char_%d", time.Now().Unix())
+			event := "billing.paid"
+
+			mockData := map[string]any{
+				"event": event,
+				"data": map[string]any{
+					"id":         id,
+					"externalId": "order_123",
+					"amount":     1000,
+					"status":     "PAID",
+				},
+			}
+
+			message, _ := json.Marshal(mockData)
+			l.displayWebhook(webhookMetadata{Event: event, ID: id}, message)
+
+			go func() {
+				_ = l.forward(ctx, message, event)
+			}()
+		}
 	}
-
-	return ws.ConnectWithRetry(ctx, cfg, l.readLoop)
 }
 
 func (l *Listener) readLoop(ctx context.Context, conn *websocket.Conn) error {
@@ -67,7 +69,7 @@ func (l *Listener) readLoop(ctx context.Context, conn *websocket.Conn) error {
 	l.SetupConn(conn)
 
 	g.Go(func() error {
-		return l.heartbeat(gCtx, conn)
+		return l.Heartbeat(gCtx, conn)
 	})
 
 	for {
@@ -78,141 +80,80 @@ func (l *Listener) readLoop(ctx context.Context, conn *websocket.Conn) error {
 		default:
 		}
 
-		l.connMu.Lock()
-		conn.SetReadDeadline(time.Now().Add(90 * time.Second))
-		l.connMu.Unlock()
+		l.SetReadDeadline(conn)
 
 		_, message, err := conn.ReadMessage()
-
 		if err != nil {
 			if websocket.IsCloseError(err, websocket.CloseNormalClosure, websocket.CloseGoingAway) {
 				slog.Info("WebSocket connection closed")
-
 				_ = g.Wait()
-
 				return nil
 			}
 
 			if gCtx.Err() != nil {
 				_ = g.Wait()
-
 				return nil
 			}
 
 			_ = g.Wait()
-
 			return fmt.Errorf("failed to read websocket message: %w", err)
 		}
 
-		l.logWebhook(message)
+		var raw struct {
+			Event string `json:"event"`
+			Data  struct {
+				ID string `json:"id"`
+			} `json:"data"`
+		}
+
+		if err := json.Unmarshal(message, &raw); err != nil {
+			style.PrintError("Received invalid JSON from WebSocket")
+			continue
+		}
+
+		meta := webhookMetadata{Event: raw.Event, ID: raw.Data.ID}
+		l.displayWebhook(meta, message)
 
 		g.Go(func() error {
-			if err := l.forward(gCtx, message); err != nil {
-				slog.Error("Webhook forward failed", "error", err)
-			}
-
+			_ = l.forward(gCtx, message, meta.Event)
 			return nil
 		})
 	}
 }
 
-func (l *Listener) SetupConn(conn *websocket.Conn) {
-	conn.SetPongHandler(func(string) error {
-		l.connMu.Lock()
-
-		defer l.connMu.Unlock()
-
-		return conn.SetReadDeadline(time.Now().Add(90 * time.Second))
-	})
-}
-
-func (l *Listener) heartbeat(ctx context.Context, conn *websocket.Conn) error {
-	ticker := time.NewTicker(30 * time.Second)
-
-	defer ticker.Stop()
-
-	for {
-		select {
-		case <-ctx.Done():
-			l.connMu.Lock()
-			conn.WriteControl(
-				websocket.CloseMessage,
-				websocket.FormatCloseMessage(websocket.CloseNormalClosure, ""),
-				time.Now().Add(time.Second),
-			)
-			l.connMu.Unlock()
-
-			return nil
-
-		case <-ticker.C:
-			l.connMu.Lock()
-			err := conn.WriteControl(websocket.PingMessage, nil, time.Now().Add(10*time.Second))
-
-			l.connMu.Unlock()
-
-			if err != nil {
-				slog.Debug("Ping failed", "error", err)
-
-				return err
-			}
-		}
-	}
-}
-
-func (l *Listener) logWebhook(message []byte) {
-	var webhook Message
-
-	slog.Info("Webhook received", "size_bytes", len(message))
-
-	if err := json.Unmarshal(message, &webhook); err != nil {
-		l.logRaw(message)
-
-		return
-	}
+func (l *Listener) displayWebhook(meta webhookMetadata, rawBody []byte) {
+	style.LogWebhookReceived(meta.Event, meta.ID)
 
 	l.txLogger.Info("webhook_received",
+		"event", meta.Event,
+		"id", meta.ID,
 		"timestamp", time.Now().Format(time.RFC3339),
-		"size_bytes", len(message),
-		"raw_message", string(message),
+		"size_bytes", len(rawBody),
+		"raw_message", string(rawBody),
 	)
 
-	l.renderOutput(message)
-}
-
-func (l *Listener) logRaw(msg []byte) {
-	slog.Info("Webhook received (raw)", "size", len(msg))
-
-	l.txLogger.Info("webhook_received_raw",
-		"timestamp", time.Now().Format(time.RFC3339),
-		"size_bytes", len(msg),
-		"data", string(msg),
-	)
-
-	fmt.Println(string(msg))
-}
-
-func (l *Listener) renderOutput(msg []byte) {
-	if !l.cfg.Verbose {
-		fmt.Println(string(msg))
+	if !l.Cfg.Verbose {
 		return
 	}
 
 	var buf bytes.Buffer
-	if err := json.Indent(&buf, msg, "", "  "); err != nil {
-		fmt.Println(string(msg))
+	if err := json.Indent(&buf, rawBody, "", "  "); err != nil {
+		fmt.Println(string(rawBody))
 		return
-
 	}
-
 	fmt.Println(buf.String())
 }
 
-func (l *Listener) forward(ctx context.Context, message []byte) error {
+func (l *Listener) forward(ctx context.Context, message []byte, event string) error {
 	startTime := time.Now()
+	timestamp := time.Now().Unix()
+
+	signature := crypto.SignWebhookPayload(l.signingSecret, timestamp, message)
 
 	resp, err := l.client.R().
 		SetContext(ctx).
 		SetHeader("Content-Type", "application/json").
+		SetHeader("X-Abacate-Signature", fmt.Sprintf("t=%d,v1=%s", timestamp, signature)).
 		SetBody(message).
 		Post(l.forwardURL)
 
@@ -220,41 +161,37 @@ func (l *Listener) forward(ctx context.Context, message []byte) error {
 
 	if err != nil {
 		l.txLogger.Error("webhook_forward_failed",
+			"event", event,
 			"url", l.forwardURL,
 			"error", err.Error(),
 			"duration_ms", duration.Milliseconds(),
 			"timestamp", time.Now().Format(time.RFC3339),
 		)
-
 		return fmt.Errorf("failed to forward webhook: %w", err)
 	}
 
 	statusCode := resp.StatusCode()
+	style.LogWebhookForwarded(statusCode, http.StatusText(statusCode), event)
 
 	if statusCode < 200 || statusCode >= 300 {
 		l.txLogger.Error("webhook_forward_error",
+			"event", event,
 			"url", l.forwardURL,
 			"status_code", statusCode,
 			"duration_ms", duration.Milliseconds(),
 			"response_body", string(resp.Body()),
 			"timestamp", time.Now().Format(time.RFC3339),
 		)
-
-		return fmt.Errorf("failed to forward webhook: %w", err)
+		return nil
 	}
 
 	l.txLogger.Info("webhook_forwarded",
+		"event", event,
 		"url", l.forwardURL,
 		"status_code", statusCode,
 		"duration_ms", duration.Milliseconds(),
 		"timestamp", time.Now().Format(time.RFC3339),
 		"size_bytes", len(message),
-	)
-
-	slog.Debug("Webhook forwarded",
-		"status", statusCode,
-		"url", l.forwardURL,
-		"duration_ms", duration.Milliseconds(),
 	)
 
 	return nil

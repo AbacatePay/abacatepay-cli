@@ -1,7 +1,7 @@
 package payments
 
 import (
-	"abacatepay-cli/internal/style"
+	"abacatepay-cli/internal/output"
 	"abacatepay-cli/internal/types"
 
 	v1 "github.com/almeidazs/go-abacate-types/v1"
@@ -20,9 +20,13 @@ func (s *Service) CreatePixQRCode(body *v1.RESTPostCreateQRCodePixBody, isTrigge
 	}
 
 	if !isTrigger {
-		style.PrintSuccess("PIX Payment Created", map[string]string{
-			"ID":     result.Data.ID,
-			"Status": "PENDING",
+		output.Print(output.Result{
+			Title: "PIX Payment Created",
+			Fields: map[string]string{
+				"ID":     result.Data.ID,
+				"Status": "PENDING",
+			},
+			Data: result,
 		})
 	}
 
@@ -41,9 +45,13 @@ func (s *Service) CheckPixQRCode(id string) error {
 		return err
 	}
 
-	style.PrintSuccess("PIX Status Check", map[string]string{
-		"ID":     id,
-		"Status": result.Data.Status,
+	output.Print(output.Result{
+		Title: "PIX Status Check",
+		Fields: map[string]string{
+			"ID":     id,
+			"Status": result.Data.Status,
+		},
+		Data: result,
 	})
 
 	return nil
@@ -62,9 +70,13 @@ func (s *Service) SimulatePixQRCodePayment(id string, isTrigger bool) error {
 	}
 
 	if !isTrigger {
-		style.PrintSuccess("PIX Payment Simulated", map[string]string{
-			"ID":     result.Data.ID,
-			"Status": result.Data.Status,
+		output.Print(output.Result{
+			Title: "PIX Payment Simulated",
+			Fields: map[string]string{
+				"ID":     result.Data.ID,
+				"Status": result.Data.Status,
+			},
+			Data: result,
 		})
 	}
 

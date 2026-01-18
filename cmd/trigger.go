@@ -1,14 +1,13 @@
 package cmd
 
 import (
-	"errors"
+	"fmt"
 
 	"abacatepay-cli/internal/mock"
+	"abacatepay-cli/internal/output"
 	"abacatepay-cli/internal/payments"
-	"abacatepay-cli/internal/style"
 	"abacatepay-cli/internal/utils"
 
-	v1 "github.com/almeidazs/go-abacate-types/v1"
 	"github.com/spf13/cobra"
 )
 
@@ -31,11 +30,7 @@ func trigger(evt string) error {
 		return err
 	}
 
-	if err := handleEvent(deps, evt); err != nil {
-		return err
-	}
-
-	return nil
+	return handleEvent(deps, evt)
 }
 
 func handleEvent(deps *utils.Dependencies, evt string) error {
@@ -43,11 +38,7 @@ func handleEvent(deps *utils.Dependencies, evt string) error {
 
 	switch evt {
 	case "billing.paid":
-		body := &v1.RESTPostCreateQRCodePixBody{
-			Customer: &v1.APICustomerMetadata{},
-		}
-
-		body = mock.CreatePixQRCodeMock()
+		body := mock.CreatePixQRCodeMock()
 
 		pixID, err := service.CreatePixQRCode(body, true)
 		if err != nil {
@@ -58,16 +49,42 @@ func handleEvent(deps *utils.Dependencies, evt string) error {
 			return err
 		}
 
-		style.PrintSuccess("Billing.paid Triggered", map[string]string{
-			"ID": pixID,
+		output.Print(output.Result{
+			Title: "Billing.paid Triggered",
+			Fields: map[string]string{
+				"Charge ID": pixID,
+				"Status":    "Simulated",
+				"Note":      "Check your 'listen' terminal for the webhook event",
+			},
+			Data: map[string]any{
+				"event":    evt,
+				"chargeId": pixID,
+			},
 		})
 
 		return nil
-	case "payout.done":
+
+	case "payout.done", "payout.failed":
+		isDone := evt == "payout.done"
+		mockEvent := mock.MockPayoutEvent(isDone)
+
+		output.Print(output.Result{
+			Title: fmt.Sprintf("Mock %s Triggered", evt),
+			Fields: map[string]string{
+				"Event ID":       mockEvent.ID,
+				"Transaction ID": mockEvent.Data.Transaction.ID,
+				"Status":         mockEvent.Data.Transaction.Status,
+			},
+			Data: mockEvent,
+		})
+
+		fmt.Printf("\nTip: Use 'abacatepay events resend %s' to send this mock to your local server.\n", mockEvent.ID)
+
+		// Optional: We could automatically append this mock to the local log file
+		// so it appears in 'logs list' immediately.
 		return nil
-	case "payout.failed":
-		return nil
+
 	default:
-		return errors.New("invalid event")
+		return fmt.Errorf("invalid event type: %s. Supported: billing.paid, payout.done, payout.failed", evt)
 	}
 }

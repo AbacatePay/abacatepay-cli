@@ -1,4 +1,4 @@
-package auth
+package store
 
 type MemoryStore struct {
 	tokens        map[string]string

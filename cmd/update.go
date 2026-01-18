@@ -5,7 +5,7 @@ import (
 	"fmt"
 	"os"
 
-	"abacatepay-cli/internal/utils"
+	"abacatepay-cli/internal/version"
 
 	"github.com/creativeprojects/go-selfupdate"
 	"github.com/spf13/cobra"
@@ -27,8 +27,7 @@ func init() {
 func update() error {
 	ctx := context.Background()
 
-	latest, found, err := utils.CheckUpdate(ctx, rootCmd.Version)
-
+	latest, found, err := version.CheckUpdate(ctx, rootCmd.Version)
 	if err != nil {
 		return fmt.Errorf("couldn’t check for updates: %w", err)
 	}

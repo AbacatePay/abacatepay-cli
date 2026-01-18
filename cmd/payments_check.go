@@ -1,9 +1,6 @@
 package cmd
 
 import (
-	"fmt"
-
-	"abacatepay-cli/internal/auth"
 	"abacatepay-cli/internal/payments"
 	"abacatepay-cli/internal/utils"
 
@@ -24,27 +21,10 @@ func init() {
 }
 
 func check(paymentID string) error {
-	if !utils.IsOnline() {
-		return fmt.Errorf("you’re offline — check your connection and try again")
-	}
-
-	deps := utils.SetupDependencies(Local, Verbose)
-	activeProfile, err := deps.Store.GetActiveProfile()
+	deps, err := utils.SetupClient(Local, Verbose)
 	if err != nil {
-		return fmt.Errorf("failed to get active profile: %w", err)
+		return err
 	}
-
-	token, err := deps.Store.GetNamed(activeProfile)
-	if err != nil || token == "" {
-		return fmt.Errorf("token not found for active profile: %s", activeProfile)
-	}
-
-	_, err = auth.ValidateToken(deps.Client, deps.Config.APIBaseURL, token)
-	if err != nil {
-		return fmt.Errorf("session expired for profile %s: %w", activeProfile, err)
-	}
-
-	deps.Client.SetAuthToken(token)
 
 	pixService := payments.New(deps.Client, deps.Config.APIBaseURL)
 

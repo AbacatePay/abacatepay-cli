@@ -1,3 +1,4 @@
+// Package cmd...
 package cmd
 
 import (
@@ -5,6 +6,7 @@ import (
 	"os"
 
 	"abacatepay-cli/internal/logger"
+	"abacatepay-cli/internal/output"
 	"abacatepay-cli/internal/version"
 
 	"github.com/spf13/cobra"
@@ -18,15 +20,24 @@ var rootCmd = &cobra.Command{
 	SilenceErrors: true,
 }
 
-var Local, Verbose bool
+var (
+	Local, Verbose bool
+	OutputFormat   string
+)
 
 func Exec() {
 	rootCmd.PersistentFlags().BoolVarP(&Verbose, "verbose", "v", false, "Enable verbose logging")
 	rootCmd.PersistentFlags().BoolVarP(&Local, "local", "l", false, "Use test server")
+	rootCmd.PersistentFlags().StringVarP(&OutputFormat, "output", "o", "text", "Output format: text, json, table")
 
-	rootCmd.PersistentPreRun = func(cmd *cobra.Command, args []string) {
+	rootCmd.PersistentPreRunE = func(cmd *cobra.Command, args []string) error {
+		format, err := output.ParseFormat(OutputFormat)
+		if err != nil {
+			return err
+		}
+		output.SetFormat(format)
+
 		level := slog.LevelInfo
-
 		if Verbose {
 			level = slog.LevelDebug
 		}
@@ -34,23 +45,20 @@ func Exec() {
 		cfg, err := logger.DefaultConfig()
 		if err != nil {
 			h := slog.NewTextHandler(os.Stderr, &slog.HandlerOptions{Level: level})
-
 			slog.SetDefault(slog.New(h))
-
-			return
+			return nil
 		}
 
 		cfg.Level = level
-
 		if _, err := logger.Setup(cfg); err != nil {
 			h := slog.NewTextHandler(os.Stderr, &slog.HandlerOptions{Level: level})
-
 			slog.SetDefault(slog.New(h))
 		}
+		return nil
 	}
 
 	if err := rootCmd.Execute(); err != nil {
-		slog.Error(err.Error())
+		output.Error(err.Error())
 		os.Exit(1)
 	}
 }

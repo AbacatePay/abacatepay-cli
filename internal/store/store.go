@@ -1,9 +1,13 @@
-package auth
+// Package store provides token storage implementations for authentication credentials.
+package store
 
 import (
+	"crypto/sha256"
+	"encoding/hex"
 	"fmt"
 	"os"
-	"path/filepath"
+	"os/user"
+	"strings"
 
 	"github.com/99designs/keyring"
 )
@@ -32,26 +36,28 @@ func NewKeyringStore(serviceName, tokenKey string) *KeyringStore {
 	}
 }
 
-func (k *KeyringStore) getKeyring() (keyring.Keyring, error) {
-	homeDir, err := os.UserHomeDir()
+func deriveKeyringPassword() string {
+	var parts []string
 
-	if err != nil {
-		return nil, fmt.Errorf("failed to resolve home directory: %w", err)
+	if u, err := user.Current(); err == nil {
+		parts = append(parts, u.Username, u.Uid)
 	}
 
-	storeDir := filepath.Join(homeDir, ".abacatepay", "keyring")
-	if err := os.MkdirAll(storeDir, 0o700); err != nil {
-		return nil, fmt.Errorf("failed to create keyring directory: %w", err)
+	if machineID := getMachineID(); machineID != "" {
+		parts = append(parts, machineID)
 	}
 
-	return keyring.Open(keyring.Config{
-		ServiceName: k.serviceName,
-		FilePasswordFunc: func(_ string) (string, error) {
-			return "abacatepay-cli-auto-unlock", nil
-		},
-		FileDir:                  storeDir,
-		KeychainTrustApplication: true,
-	})
+	if hostname, err := os.Hostname(); err == nil {
+		parts = append(parts, hostname)
+	}
+
+	if home, err := os.UserHomeDir(); err == nil {
+		parts = append(parts, home)
+	}
+
+	combined := strings.Join(parts, "|")
+	hash := sha256.Sum256([]byte(combined))
+	return hex.EncodeToString(hash[:])
 }
 
 func (k *KeyringStore) List() ([]string, error) {
@@ -82,7 +88,6 @@ func (k *KeyringStore) Save(token string) error {
 
 func (k *KeyringStore) SaveNamed(name, token string) error {
 	ring, err := k.getKeyring()
-
 	if err != nil {
 		return fmt.Errorf("failed to open keyring: %w", err)
 	}
@@ -103,22 +108,20 @@ func (k *KeyringStore) Get() (string, error) {
 
 func (k *KeyringStore) GetNamed(name string) (string, error) {
 	ring, err := k.getKeyring()
-
 	if err != nil {
 		return "", fmt.Errorf("failed to open keyring: %w", err)
 	}
 
 	item, err := ring.Get(name)
-
-	if err != nil {
-		if err == keyring.ErrKeyNotFound {
-			return "", nil
-		}
-
-		return "", fmt.Errorf("failed to read from keyring: %w", err)
+	if err == nil {
+		return string(item.Data), nil
 	}
 
-	return string(item.Data), nil
+	if err == keyring.ErrKeyNotFound {
+		return "", nil
+	}
+
+	return "", fmt.Errorf("failed to read from keyring: %w", err)
 }
 
 func (k *KeyringStore) Delete() error {
@@ -127,7 +130,6 @@ func (k *KeyringStore) Delete() error {
 
 func (k *KeyringStore) DeleteNamed(name string) error {
 	ring, err := k.getKeyring()
-
 	if err != nil {
 		return fmt.Errorf("failed to open keyring: %w", err)
 	}

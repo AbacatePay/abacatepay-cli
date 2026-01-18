@@ -1,9 +1,10 @@
 package cmd
 
 import (
-	"abacatepay-cli/internal/style"
-	"abacatepay-cli/internal/utils"
 	"fmt"
+
+	"abacatepay-cli/internal/output"
+	"abacatepay-cli/internal/utils"
 
 	"github.com/spf13/cobra"
 )
@@ -34,17 +35,29 @@ func listProfiles() error {
 	}
 
 	if len(profiles) == 0 {
-		fmt.Println("No profiles found. Use 'abacatepay login' to create one.")
+		output.Print(output.Result{
+			Title: "No profiles found",
+			Fields: map[string]string{
+				"Hint": "Use 'abacatepay login' to create one.",
+			},
+			Data: map[string]any{
+				"profiles": []string{},
+				"active":   "",
+			},
+		})
 		return nil
 	}
 
-	profileMap := make(map[string]string)
-	for _, p := range profiles {
-		token, _ := deps.Store.GetNamed(p)
-		profileMap[p] = token
+	outputProfiles := make([]output.Profile, 0, len(profiles))
+	for _, name := range profiles {
+		token, _ := deps.Store.GetNamed(name)
+		outputProfiles = append(outputProfiles, output.Profile{
+			Name:   name,
+			Token:  token,
+			Active: name == active,
+		})
 	}
 
-	style.ProfileSimpleList(profileMap, active)
-
+	output.PrintProfiles(outputProfiles, active)
 	return nil
 }

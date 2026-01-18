@@ -71,9 +71,8 @@ func createPayment(method string) error {
 			Customer: &v1.APICustomerMetadata{},
 		}
 		if err := prompts.PromptForPIXQRCodeData(body); err != nil {
-			return fmt.Errorf("error to prompt pix qrcode data: %w", err)
+			return fmt.Errorf("failed to prompt pix qrcode data: %w", err)
 		}
-
 		_, err := service.CreatePixQRCode(body, false)
 		return err
 
@@ -87,9 +86,8 @@ func createPayment(method string) error {
 			Customer: &types.Customer{},
 		}
 		if err := prompts.PromptForCheckout(body); err != nil {
-			return fmt.Errorf("error to prompt checkout data: %w", err)
+			return fmt.Errorf("failed to prompt checkout data: %w", err)
 		}
-
 		return service.CreateCheckout(body)
 
 	default:

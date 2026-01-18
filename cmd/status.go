@@ -1,7 +1,7 @@
 package cmd
 
 import (
-	"abacatepay-cli/internal/style"
+	"abacatepay-cli/internal/output"
 	"abacatepay-cli/internal/utils"
 
 	"github.com/spf13/cobra"
@@ -23,19 +23,26 @@ func init() {
 func getAuthStatus() error {
 	deps, err := utils.SetupClient(Local, Verbose)
 	if err != nil {
-		style.PrintError("You are not authenticated. Use 'abacatepay login' to start.")
+		output.Error("You are not authenticated. Use 'abacatepay login' to start.")
 		return nil
 	}
 
 	activeProfile, err := deps.Store.GetActiveProfile()
 	if err != nil || activeProfile == "" {
-		style.PrintError("No active profile found.")
+		output.Error("No active profile found.")
 		return nil
 	}
 
-	style.PrintSuccess("Connected successfully", map[string]string{
-		"Profile": activeProfile,
-		"Status":  "Online",
+	output.Print(output.Result{
+		Title: "Connected successfully",
+		Fields: map[string]string{
+			"Profile": activeProfile,
+			"Status":  "Online",
+		},
+		Data: map[string]string{
+			"profile": activeProfile,
+			"status":  "online",
+		},
 	})
 
 	return nil

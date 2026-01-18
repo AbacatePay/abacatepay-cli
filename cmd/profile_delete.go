@@ -1,8 +1,9 @@
 package cmd
 
 import (
-	"abacatepay-cli/internal/utils"
 	"fmt"
+
+	"abacatepay-cli/internal/utils"
 
 	"github.com/spf13/cobra"
 )
@@ -25,10 +26,10 @@ func deleteProfile(name string) error {
 	deps := utils.SetupDependencies(Local, Verbose)
 
 	token, err := deps.Store.GetNamed(name)
-
 	if err != nil {
 		return fmt.Errorf("error verifying profile: %w", err)
 	}
+
 	if token == "" {
 		return fmt.Errorf("profile '%s' not found", name)
 	}

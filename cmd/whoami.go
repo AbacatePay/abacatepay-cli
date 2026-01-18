@@ -4,6 +4,7 @@ import (
 	"fmt"
 
 	"abacatepay-cli/internal/auth"
+	"abacatepay-cli/internal/output"
 	"abacatepay-cli/internal/utils"
 
 	"github.com/spf13/cobra"
@@ -22,28 +23,34 @@ func init() {
 }
 
 func whoami() error {
-	deps := utils.SetupDependencies(Local, Verbose)
-	activeProfile, err := deps.Store.GetActiveProfile()
-
-	if err != nil || activeProfile == "" {
-		return fmt.Errorf("no active profile found. Please login first")
+	deps, err := utils.SetupClient(Local, Verbose)
+	if err != nil {
+		return err
 	}
 
-	token, err := deps.Store.GetNamed(activeProfile)
-
-	if err != nil || token == "" {
-		return fmt.Errorf("token not found for active profile: %s", activeProfile)
-	}
+	activeProfile, _ := deps.Store.GetActiveProfile()
+	token, _ := deps.Store.GetNamed(activeProfile)
 
 	user, err := auth.ValidateToken(deps.Client, deps.Config.APIBaseURL, token)
 	if err != nil {
-		return fmt.Errorf("session expired for profile %s: %w", activeProfile, err)
+		return fmt.Errorf("session expired: %w", err)
 	}
 
-	fmt.Printf("● Active Profile: %s\n", activeProfile)
-	fmt.Printf("● User:           %s\n", user.Name)
-	fmt.Printf("● Email:          %s\n", user.Email)
-	fmt.Printf("● Status:         Authenticated ✅\n")
+	output.Print(output.Result{
+		Title: "User Information",
+		Fields: map[string]string{
+			"Profile": activeProfile,
+			"User":    user.Name,
+			"Email":   user.Email,
+			"Status":  "Authenticated",
+		},
+		Data: map[string]any{
+			"profile": activeProfile,
+			"user":    user.Name,
+			"email":   user.Email,
+			"status":  "authenticated",
+		},
+	})
 
 	return nil
 }

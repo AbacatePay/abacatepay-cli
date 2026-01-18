@@ -21,7 +21,10 @@ func init() {
 }
 
 func logout() error {
-	deps := utils.SetupDependencies(Local, Verbose)
+	deps, err := utils.SetupClient(Local, Verbose)
+	if err != nil {
+		return err
+	}
 
 	return auth.Logout(deps.Store)
 }

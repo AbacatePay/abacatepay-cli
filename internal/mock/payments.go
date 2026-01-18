@@ -5,7 +5,6 @@ import (
 	"time"
 
 	"abacatepay-cli/internal/types"
-	"abacatepay-cli/internal/utils"
 
 	v1 "github.com/almeidazs/go-abacate-types/v1"
 	"github.com/brianvoe/gofakeit/v7"
@@ -24,7 +23,7 @@ func CreatePixQRCodeMock() *v1.RESTPostCreateQRCodePixBody {
 		Customer: &v1.APICustomerMetadata{
 			Name:      gofakeit.Name(),
 			Email:     gofakeit.Email(),
-			TaxID:     utils.GenerateValidCPF(r),
+			TaxID:     generateValidCPF(r),
 			Cellphone: "11999999999",
 		},
 	}
@@ -48,7 +47,7 @@ func CreateCheckoutMock() *types.CreateCheckoutRequest {
 		Customer: &types.Customer{
 			Name:      gofakeit.Name(),
 			Email:     gofakeit.Email(),
-			TaxID:     utils.GenerateValidCPF(r),
+			TaxID:     generateValidCPF(r),
 			Cellphone: "11999999999",
 		},
 	}
