@@ -45,7 +45,6 @@ func listProfiles() error {
 				"active":   "",
 			},
 		})
-
 		return nil
 	}
 
@@ -60,6 +59,5 @@ func listProfiles() error {
 	}
 
 	output.PrintProfiles(outputProfiles, active)
-
 	return nil
 }

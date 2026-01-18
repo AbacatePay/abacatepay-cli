@@ -31,11 +31,7 @@ func trigger(evt string) error {
 		return err
 	}
 
-	if err := handleEvent(deps, evt); err != nil {
-		return err
-	}
-
-	return nil
+	return handleEvent(deps, evt)
 }
 
 func handleEvent(deps *utils.Dependencies, evt string) error {

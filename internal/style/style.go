@@ -1,6 +1,7 @@
 package style
 
 import (
+	"encoding/json"
 	"fmt"
 	"sort"
 	"strings"
@@ -110,29 +111,27 @@ func ProfileSimpleList(items map[string]string, activeItem string) {
 
 	for _, name := range keys {
 		apiKey := items[name]
-		displayAPIKey := ""
-
-		displayAPIKey = LabelStyle.Render(" (no API key)")
+		displayAPIKey := LabelStyle.Render(" (no API key)")
 		if apiKey != "" {
 			shortKey := apiKey
 			if len(shortKey) > 10 {
 				shortKey = shortKey[:10]
 			}
-
 			displayAPIKey = LabelStyle.Render(fmt.Sprintf(" (%s...)", shortKey))
 		}
 
-		output := name + displayAPIKey
-		if name == activeItem {
-			output = lipgloss.NewStyle().
-				Foreground(Palette.Green).
-				Bold(true).
-				Render(name) + displayAPIKey + lipgloss.NewStyle().
-				Foreground(Palette.Green).
-				Bold(true).
-				Render("     🥑")
+		if name != activeItem {
+			fmt.Println(name + displayAPIKey)
+			continue
 		}
 
+		output := lipgloss.NewStyle().
+			Foreground(Palette.Green).
+			Bold(true).
+			Render(name) + displayAPIKey + lipgloss.NewStyle().
+			Foreground(Palette.Green).
+			Bold(true).
+			Render("     🥑")
 		fmt.Println(output)
 	}
 	fmt.Println("")
@@ -140,14 +139,15 @@ func ProfileSimpleList(items map[string]string, activeItem string) {
 
 func SimpleList(items []string, activeItem string) {
 	for _, item := range items {
-		output := item
-		if item == activeItem {
-			output = lipgloss.NewStyle().
-				Foreground(Palette.Green).
-				Bold(true).
-				Render(item + "     🥑")
+		if item != activeItem {
+			fmt.Println(item)
+			continue
 		}
 
+		output := lipgloss.NewStyle().
+			Foreground(Palette.Green).
+			Bold(true).
+			Render(item + "     🥑")
 		fmt.Println(output)
 	}
 	fmt.Println("")
@@ -231,4 +231,91 @@ func Input(title, placeholder string, value *string, validate func(string) error
 func Confirm(title string, value *bool) error {
 	form := huh.NewForm(huh.NewGroup(huh.NewConfirm().Title(title).Value(value))).WithTheme(AbacateTheme())
 	return form.Run()
+}
+
+func PrintJSON(data any) {
+	b, err := json.MarshalIndent(data, "", "  ")
+	if err != nil {
+		fmt.Println(data)
+		return
+	}
+
+	str := string(b)
+	var result strings.Builder
+
+	keyStyle := lipgloss.NewStyle().Foreground(Palette.Green)
+	stringStyle := lipgloss.NewStyle().Foreground(Palette.Yellow)
+	numberStyle := lipgloss.NewStyle().Foreground(Palette.Brown)
+	boolStyle := lipgloss.NewStyle().Foreground(Palette.SoftRed)
+
+	inString := false
+	isKey := false
+
+	for i := 0; i < len(str); i++ {
+		char := str[i]
+
+		if char == '"' {
+			inString = !inString
+			if inString {
+				for j := i + 1; j < len(str); j++ {
+					if str[j] == '"' {
+						for k := j + 1; k < len(str); k++ {
+							if str[k] == ' ' || str[k] == '\t' || str[k] == '\n' || str[k] == '\r' {
+								continue
+							}
+							if str[k] == ':' {
+								isKey = true
+							}
+							break
+						}
+						break
+					}
+				}
+
+				if isKey {
+					result.WriteString(keyStyle.Render("\""))
+				} else {
+					result.WriteString(stringStyle.Render("\""))
+				}
+			} else {
+				if isKey {
+					result.WriteString(keyStyle.Render("\""))
+					isKey = false
+				} else {
+					result.WriteString(stringStyle.Render("\""))
+				}
+			}
+			continue
+		}
+
+		if inString {
+			if isKey {
+				result.WriteString(keyStyle.Render(string(char)))
+			} else {
+				result.WriteString(stringStyle.Render(string(char)))
+			}
+			continue
+		}
+
+		if (char >= '0' && char <= '9') || char == '-' || char == '.' {
+			result.WriteString(numberStyle.Render(string(char)))
+			continue
+		}
+
+		if i+4 <= len(str) && (str[i:i+4] == "true" || str[i:i+4] == "null") {
+			result.WriteString(boolStyle.Render(str[i : i+4]))
+			i += 3
+			continue
+		}
+
+		if i+5 <= len(str) && str[i:i+5] == "false" {
+			result.WriteString(boolStyle.Render(str[i : i+5]))
+			i += 4
+			continue
+		}
+
+		result.WriteByte(char)
+	}
+
+	fmt.Println(result.String())
 }

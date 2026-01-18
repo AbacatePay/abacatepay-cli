@@ -51,9 +51,5 @@ func login() error {
 		OpenBrowser: utils.OpenBrowser,
 	}
 
-	if err := auth.Login(params); err != nil {
-		return err
-	}
-
-	return nil
+	return auth.Login(params)
 }

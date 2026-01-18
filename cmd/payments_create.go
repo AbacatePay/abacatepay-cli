@@ -73,7 +73,6 @@ func createPayment(method string) error {
 		if err := prompts.PromptForPIXQRCodeData(body); err != nil {
 			return fmt.Errorf("error to prompt pix qrcode data: %w", err)
 		}
-
 		_, err := service.CreatePixQRCode(body, false)
 		return err
 
@@ -89,7 +88,6 @@ func createPayment(method string) error {
 		if err := prompts.PromptForCheckout(body); err != nil {
 			return fmt.Errorf("error to prompt checkout data: %w", err)
 		}
-
 		return service.CreateCheckout(body)
 
 	default:

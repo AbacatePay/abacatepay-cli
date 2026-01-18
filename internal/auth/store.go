@@ -109,16 +109,15 @@ func (k *KeyringStore) GetNamed(name string) (string, error) {
 	}
 
 	item, err := ring.Get(name)
-
-	if err != nil {
-		if err == keyring.ErrKeyNotFound {
-			return "", nil
-		}
-
-		return "", fmt.Errorf("failed to read from keyring: %w", err)
+	if err == nil {
+		return string(item.Data), nil
 	}
 
-	return string(item.Data), nil
+	if err == keyring.ErrKeyNotFound {
+		return "", nil
+	}
+
+	return "", fmt.Errorf("failed to read from keyring: %w", err)
 }
 
 func (k *KeyringStore) Delete() error {

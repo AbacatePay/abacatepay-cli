@@ -203,8 +203,8 @@ func formatShortToken(token string) string {
 	if token == "" {
 		return ""
 	}
-	if len(token) > 10 {
-		return token[:10] + "..."
+	if len(token) <= 10 {
+		return token
 	}
-	return token
+	return token[:10] + "..."
 }

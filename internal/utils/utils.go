@@ -66,11 +66,11 @@ func StartListener(params *StartListenerParams) error {
 }
 
 func GetConfig(local bool) *config.Config {
-	if local {
-		return config.Local()
+	if !local {
+		return config.Default()
 	}
 
-	return config.Default()
+	return config.Local()
 }
 
 func GetStore(cfg *config.Config) auth.TokenStore {
@@ -88,12 +88,11 @@ func PromptForURL(defaultURL string) string {
 	}
 
 	input = strings.TrimSpace(input)
-
-	if input == "" {
-		return defaultURL
+	if input != "" {
+		return input
 	}
 
-	return input
+	return defaultURL
 }
 
 func SetupDependencies(local bool, verbose bool) *Dependencies {
@@ -194,8 +193,8 @@ func GenerateValidCPF(r *rand.Rand) string {
 
 func calculateDigit(sum int) int {
 	remainder := (sum * 10) % 11
-	if remainder >= 10 {
-		return 0
+	if remainder < 10 {
+		return remainder
 	}
-	return remainder
+	return 0
 }

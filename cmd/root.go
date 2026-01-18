@@ -37,7 +37,6 @@ func Exec() {
 		output.SetFormat(format)
 
 		level := slog.LevelInfo
-
 		if Verbose {
 			level = slog.LevelDebug
 		}
@@ -50,12 +49,10 @@ func Exec() {
 		}
 
 		cfg.Level = level
-
 		if _, err := logger.Setup(cfg); err != nil {
 			h := slog.NewTextHandler(os.Stderr, &slog.HandlerOptions{Level: level})
 			slog.SetDefault(slog.New(h))
 		}
-
 		return nil
 	}
 

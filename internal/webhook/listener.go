@@ -172,14 +172,16 @@ func (l *Listener) displayWebhook(meta webhookMetadata, rawBody []byte) {
 		"raw_message", string(rawBody),
 	)
 
-	if l.cfg.Verbose {
-		var buf bytes.Buffer
-		if err := json.Indent(&buf, rawBody, "", "  "); err == nil {
-			fmt.Println(buf.String())
-		} else {
-			fmt.Println(string(rawBody))
-		}
+	if !l.cfg.Verbose {
+		return
 	}
+
+	var buf bytes.Buffer
+	if err := json.Indent(&buf, rawBody, "", "  "); err != nil {
+		fmt.Println(string(rawBody))
+		return
+	}
+	fmt.Println(buf.String())
 }
 
 func (l *Listener) forward(ctx context.Context, message []byte, event string) error {

@@ -33,19 +33,26 @@ func init() {
 	rootCmd.AddCommand(listenCmd)
 }
 
+func setupListenDeps() (*utils.Dependencies, string, error) {
+	if listenMock {
+		deps := utils.SetupDependencies(Local, Verbose)
+		return deps, "", nil
+	}
+
+	deps, err := utils.SetupClient(Local, Verbose)
+	if err != nil {
+		return nil, "", err
+	}
+
+	profile, _ := deps.Store.GetActiveProfile()
+	token, _ := deps.Store.GetNamed(profile)
+	return deps, token, nil
+}
+
 func listen(cmd *cobra.Command) error {
-	deps := utils.SetupDependencies(Local, Verbose)
-	var token string
-
-	if !listenMock {
-		var err error
-		deps, err = utils.SetupClient(Local, Verbose)
-		if err != nil {
-			return err
-		}
-
-		profile, _ := deps.Store.GetActiveProfile()
-		token, _ = deps.Store.GetNamed(profile)
+	deps, token, err := setupListenDeps()
+	if err != nil {
+		return err
 	}
 
 	defaultURL := "http://localhost:3000/webhooks/abacatepay"
