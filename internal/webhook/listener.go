@@ -167,6 +167,8 @@ func (l *Listener) displayWebhook(meta webhookMetadata, rawBody []byte) {
 	style.LogWebhookReceived(meta.Event, meta.ID)
 
 	l.txLogger.Info("webhook_received",
+		"event", meta.Event,
+		"id", meta.ID,
 		"timestamp", time.Now().Format(time.RFC3339),
 		"size_bytes", len(rawBody),
 		"raw_message", string(rawBody),
@@ -201,6 +203,7 @@ func (l *Listener) forward(ctx context.Context, message []byte, event string) er
 
 	if err != nil {
 		l.txLogger.Error("webhook_forward_failed",
+			"event", event,
 			"url", l.forwardURL,
 			"error", err.Error(),
 			"duration_ms", duration.Milliseconds(),
@@ -214,6 +217,7 @@ func (l *Listener) forward(ctx context.Context, message []byte, event string) er
 
 	if statusCode < 200 || statusCode >= 300 {
 		l.txLogger.Error("webhook_forward_error",
+			"event", event,
 			"url", l.forwardURL,
 			"status_code", statusCode,
 			"duration_ms", duration.Milliseconds(),
@@ -224,6 +228,7 @@ func (l *Listener) forward(ctx context.Context, message []byte, event string) er
 	}
 
 	l.txLogger.Info("webhook_forwarded",
+		"event", event,
 		"url", l.forwardURL,
 		"status_code", statusCode,
 		"duration_ms", duration.Milliseconds(),

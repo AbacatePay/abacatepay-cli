@@ -7,6 +7,7 @@ import (
 
 	"abacatepay-cli/internal/logger"
 	"abacatepay-cli/internal/output"
+	"abacatepay-cli/internal/style"
 
 	"github.com/spf13/cobra"
 )
@@ -85,15 +86,12 @@ func printLogsTable(entries []logger.LogEntry) error {
 		rows = append(rows, []string{
 			timestamp,
 			status,
+			entry.ID,
 			entry.URL,
 		})
 	}
 
-	output.Print(output.Result{
-		Title:   "Transaction Logs",
-		Headers: []string{"Timestamp", "Type", "URL"},
-		Rows:    rows,
-	})
+	style.PrintTable([]string{"Timestamp", "Type", "ID", "URL"}, rows)
 
 	return nil
 }
