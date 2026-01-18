@@ -11,6 +11,7 @@ import (
 	"github.com/go-resty/resty/v2"
 
 	"abacatepay-cli/internal/config"
+	"abacatepay-cli/internal/store"
 	"abacatepay-cli/internal/style"
 
 	"abacatepay-cli/internal/types"
@@ -19,7 +20,7 @@ import (
 type LoginParams struct {
 	Config      *config.Config
 	Client      *resty.Client
-	Store       TokenStore
+	Store       store.TokenStore
 	Context     context.Context
 	APIKey      string
 	ProfileName string
@@ -95,17 +96,17 @@ func loginWithDeviceFlow(params *LoginParams) error {
 	return nil
 }
 
-func saveAndActivateProfile(store TokenStore, profile, token string) error {
-	existingToken, _ := store.GetNamed(profile)
+func saveAndActivateProfile(st store.TokenStore, profile, token string) error {
+	existingToken, _ := st.GetNamed(profile)
 	if existingToken != "" {
 		slog.Info("Updating existing profile", "name", profile)
 	}
 
-	if err := store.SaveNamed(profile, token); err != nil {
+	if err := st.SaveNamed(profile, token); err != nil {
 		return fmt.Errorf("failed to store API key: %w", err)
 	}
 
-	if err := store.SetActiveProfile(profile); err != nil {
+	if err := st.SetActiveProfile(profile); err != nil {
 		return fmt.Errorf("failed to activate profile: %w", err)
 	}
 
@@ -136,8 +137,8 @@ func getHostname() string {
 	return host
 }
 
-func Logout(store TokenStore) error {
-	if err := store.Delete(); err != nil {
+func Logout(st store.TokenStore) error {
+	if err := st.Delete(); err != nil {
 		return err
 	}
 

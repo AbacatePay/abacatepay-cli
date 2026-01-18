@@ -1,4 +1,4 @@
-// Package utils provides shared utilities for CLI setup, dependencies, and common operations.
+// Package utils...
 package utils
 
 import (
@@ -10,6 +10,7 @@ import (
 	"abacatepay-cli/internal/client"
 	"abacatepay-cli/internal/config"
 	"abacatepay-cli/internal/logger"
+	"abacatepay-cli/internal/store"
 
 	"github.com/go-resty/resty/v2"
 )
@@ -18,7 +19,7 @@ type StartListenerParams struct {
 	Context    context.Context
 	Config     *config.Config
 	Client     *resty.Client
-	Store      auth.TokenStore
+	Store      store.TokenStore
 	Token      string
 	ForwardURL string
 	Version    string
@@ -28,7 +29,7 @@ type StartListenerParams struct {
 type Dependencies struct {
 	Config *config.Config
 	Client *resty.Client
-	Store  auth.TokenStore
+	Store  store.TokenStore
 }
 
 func SetupTransactionLogger() (*slog.Logger, error) {
@@ -48,8 +49,8 @@ func GetConfig(local bool) *config.Config {
 	return config.Local()
 }
 
-func GetStore(cfg *config.Config) auth.TokenStore {
-	return auth.NewKeyringStore(cfg.ServiceName, cfg.TokenKey)
+func GetStore(cfg *config.Config) store.TokenStore {
+	return store.NewKeyringStore(cfg.ServiceName, cfg.TokenKey)
 }
 
 func SetupDependencies(local bool, verbose bool) *Dependencies {
