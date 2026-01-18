@@ -17,8 +17,6 @@ import (
 	"golang.org/x/sync/errgroup"
 )
 
-// Listen starts the webhook listener, connecting to WebSocket or running mock mode
-
 func (l *Listener) Listen(ctx context.Context, mock bool) error {
 	if mock {
 		style.LogSigningSecret(l.signingSecret)

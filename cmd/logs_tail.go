@@ -38,7 +38,7 @@ func logsTail() error {
 	listener := webhook.NewTailListener(deps.Config, deps.Config.TokenKey)
 
 	fmt.Println("Streaming webhook events...")
-	fmt.Println("Press Ctrl+C to stop\n")
+	fmt.Println("\nPress Ctrl+C to stop")
 
 	go func() {
 		<-ctx.Done()
