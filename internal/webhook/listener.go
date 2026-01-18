@@ -17,6 +17,8 @@ import (
 	"golang.org/x/sync/errgroup"
 )
 
+// Listen starts the webhook listener, connecting to WebSocket or running mock mode
+
 func (l *Listener) Listen(ctx context.Context, mock bool) error {
 	if mock {
 		style.LogSigningSecret(l.signingSecret)
@@ -25,18 +27,7 @@ func (l *Listener) Listen(ctx context.Context, mock bool) error {
 
 	slog.Info("Starting webhook listener...")
 
-	header := http.Header{}
-	header.Add("Authorization", "Bearer "+l.token)
-
-	cfg := ws.Config{
-		URL:        l.cfg.WebSocketBaseURL,
-		Headers:    header,
-		MinBackoff: 1 * time.Second,
-		MaxBackoff: 15 * time.Second,
-		MaxRetries: 5,
-	}
-
-	return ws.ConnectWithRetry(ctx, cfg, l.readLoop)
+	return ws.ConnectWithRetry(ctx, l.WSConfig(), l.readLoop)
 }
 
 func (l *Listener) mockListen(ctx context.Context) error {
@@ -80,7 +71,7 @@ func (l *Listener) readLoop(ctx context.Context, conn *websocket.Conn) error {
 	l.SetupConn(conn)
 
 	g.Go(func() error {
-		return l.heartbeat(gCtx, conn)
+		return l.Heartbeat(gCtx, conn)
 	})
 
 	for {
@@ -91,9 +82,7 @@ func (l *Listener) readLoop(ctx context.Context, conn *websocket.Conn) error {
 		default:
 		}
 
-		l.connMu.Lock()
-		conn.SetReadDeadline(time.Now().Add(90 * time.Second))
-		l.connMu.Unlock()
+		l.SetReadDeadline(conn)
 
 		_, message, err := conn.ReadMessage()
 		if err != nil {
@@ -134,35 +123,6 @@ func (l *Listener) readLoop(ctx context.Context, conn *websocket.Conn) error {
 	}
 }
 
-func (l *Listener) heartbeat(ctx context.Context, conn *websocket.Conn) error {
-	ticker := time.NewTicker(30 * time.Second)
-	defer ticker.Stop()
-
-	for {
-		select {
-		case <-ctx.Done():
-			l.connMu.Lock()
-			conn.WriteControl(
-				websocket.CloseMessage,
-				websocket.FormatCloseMessage(websocket.CloseNormalClosure, ""),
-				time.Now().Add(time.Second),
-			)
-			l.connMu.Unlock()
-			return nil
-
-		case <-ticker.C:
-			l.connMu.Lock()
-			err := conn.WriteControl(websocket.PingMessage, nil, time.Now().Add(10*time.Second))
-			l.connMu.Unlock()
-
-			if err != nil {
-				slog.Debug("Ping failed", "error", err)
-				return err
-			}
-		}
-	}
-}
-
 func (l *Listener) displayWebhook(meta webhookMetadata, rawBody []byte) {
 	style.LogWebhookReceived(meta.Event, meta.ID)
 
@@ -174,7 +134,7 @@ func (l *Listener) displayWebhook(meta webhookMetadata, rawBody []byte) {
 		"raw_message", string(rawBody),
 	)
 
-	if !l.cfg.Verbose {
+	if !l.Cfg.Verbose {
 		return
 	}
 

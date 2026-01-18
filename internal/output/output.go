@@ -3,6 +3,7 @@ package output
 import (
 	"encoding/json"
 	"fmt"
+	"log/slog"
 	"os"
 	"sync"
 
@@ -111,15 +112,17 @@ func printJSON(r Result) {
 
 	encoder := json.NewEncoder(os.Stdout)
 	encoder.SetIndent("", "  ")
-	_ = encoder.Encode(data)
+	if err := encoder.Encode(data); err != nil {
+		slog.Debug("failed to encode JSON output", "error", err)
+	}
 }
 
 func printJSONError(msg string) {
 	encoder := json.NewEncoder(os.Stdout)
 	encoder.SetIndent("", "  ")
-	_ = encoder.Encode(map[string]any{
-		"error": msg,
-	})
+	if err := encoder.Encode(map[string]any{"error": msg}); err != nil {
+		slog.Debug("failed to encode JSON error output", "error", err)
+	}
 }
 
 func printText(r Result) {
@@ -169,10 +172,12 @@ func printProfilesJSON(profiles []Profile, activeProfile string) {
 
 	encoder := json.NewEncoder(os.Stdout)
 	encoder.SetIndent("", "  ")
-	_ = encoder.Encode(map[string]any{
+	if err := encoder.Encode(map[string]any{
 		"profiles": profileData,
 		"active":   activeProfile,
-	})
+	}); err != nil {
+		slog.Debug("failed to encode profiles JSON output", "error", err)
+	}
 }
 
 func printProfilesTable(profiles []Profile) {

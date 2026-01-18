@@ -4,6 +4,7 @@ import (
 	"bufio"
 	"encoding/json"
 	"fmt"
+	"log/slog"
 	"os"
 	"path/filepath"
 )
@@ -63,6 +64,7 @@ func ReadTransactionLogs(opts ReadOptions) ([]LogEntry, error) {
 
 		var entry LogEntry
 		if err := json.Unmarshal([]byte(line), &entry); err != nil {
+			slog.Debug("skipped malformed log entry", "error", err)
 			continue
 		}
 
@@ -106,6 +108,7 @@ func FindLogEntryByID(id string) (*LogEntry, error) {
 
 		var entry LogEntry
 		if err := json.Unmarshal([]byte(line), &entry); err != nil {
+			slog.Debug("skipped malformed log entry", "error", err)
 			continue
 		}
 

@@ -3,6 +3,7 @@ package style
 import (
 	"encoding/json"
 	"fmt"
+	"log/slog"
 	"sort"
 	"strings"
 	"time"
@@ -176,8 +177,8 @@ func PrintVerifyError(expected, received string) {
 	sb.WriteString(ErrorStyle.Render("⚠️  Signature mismatch") + "\n\n")
 
 	sb.WriteString(lipgloss.NewStyle().Bold(true).Render("Debug Analysis:") + "\n")
-	sb.WriteString(fmt.Sprintf("%s %s\n", LabelStyle.Render("Expected:"), ValueStyle.Render(expected)))
-	sb.WriteString(fmt.Sprintf("%s %s\n\n", LabelStyle.Render("Received:"), ValueStyle.Render(received)))
+	fmt.Fprintf(&sb, "%s %s\n", LabelStyle.Render("Expected:"), ValueStyle.Render(expected))
+	fmt.Fprintf(&sb, "%s %s\n\n", LabelStyle.Render("Received:"), ValueStyle.Render(received))
 
 	sb.WriteString(lipgloss.NewStyle().Bold(true).Render("Common causes for mismatch:") + "\n")
 	sb.WriteString(lipgloss.NewStyle().Foreground(Palette.White).Render("1. Payload content differs (check for extra spaces, newlines, or formatting).") + "\n")
@@ -252,6 +253,7 @@ func Confirm(title string, value *bool) error {
 func PrintJSON(data any) {
 	b, err := json.MarshalIndent(data, "", "  ")
 	if err != nil {
+		slog.Debug("failed to marshal JSON for display", "error", err)
 		fmt.Println(data)
 		return
 	}

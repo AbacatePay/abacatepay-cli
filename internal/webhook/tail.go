@@ -6,9 +6,6 @@ import (
 	"encoding/json"
 	"fmt"
 	"log/slog"
-	"net/http"
-	"sync"
-	"time"
 
 	"abacatepay-cli/internal/config"
 	"abacatepay-cli/internal/style"
@@ -18,39 +15,28 @@ import (
 )
 
 type TailListener struct {
-	cfg     *config.Config
-	token   string
-	connMu  sync.Mutex
+	BaseListener
 }
 
 func NewTailListener(cfg *config.Config, token string) *TailListener {
 	return &TailListener{
-		cfg:   cfg,
-		token: token,
+		BaseListener: BaseListener{
+			Cfg:   cfg,
+			Token: token,
+		},
 	}
 }
 
 func (t *TailListener) Listen(ctx context.Context) error {
 	slog.Info("Starting tail listener...")
 
-	header := http.Header{}
-	header.Add("Authorization", "Bearer "+t.token)
-
-	cfg := ws.Config{
-		URL:        t.cfg.WebSocketBaseURL,
-		Headers:    header,
-		MinBackoff: 1 * time.Second,
-		MaxBackoff: 15 * time.Second,
-		MaxRetries: 5,
-	}
-
-	return ws.ConnectWithRetry(ctx, cfg, t.readLoop)
+	return ws.ConnectWithRetry(ctx, t.WSConfig(), t.readLoop)
 }
 
 func (t *TailListener) readLoop(ctx context.Context, conn *websocket.Conn) error {
-	t.setupConn(conn)
+	t.SetupConn(conn)
 
-	go t.heartbeat(ctx, conn)
+	go t.Heartbeat(ctx, conn)
 
 	for {
 		select {
@@ -59,9 +45,7 @@ func (t *TailListener) readLoop(ctx context.Context, conn *websocket.Conn) error
 		default:
 		}
 
-		t.connMu.Lock()
-		conn.SetReadDeadline(time.Now().Add(90 * time.Second))
-		t.connMu.Unlock()
+		t.SetReadDeadline(conn)
 
 		_, message, err := conn.ReadMessage()
 		if err != nil {
@@ -93,47 +77,10 @@ func (t *TailListener) readLoop(ctx context.Context, conn *websocket.Conn) error
 	}
 }
 
-func (t *TailListener) setupConn(conn *websocket.Conn) {
-	conn.SetPongHandler(func(string) error {
-		t.connMu.Lock()
-		defer t.connMu.Unlock()
-		return conn.SetReadDeadline(time.Now().Add(90 * time.Second))
-	})
-}
-
-func (t *TailListener) heartbeat(ctx context.Context, conn *websocket.Conn) {
-	ticker := time.NewTicker(30 * time.Second)
-	defer ticker.Stop()
-
-	for {
-		select {
-		case <-ctx.Done():
-			t.connMu.Lock()
-			conn.WriteControl(
-				websocket.CloseMessage,
-				websocket.FormatCloseMessage(websocket.CloseNormalClosure, ""),
-				time.Now().Add(time.Second),
-			)
-			t.connMu.Unlock()
-			return
-
-		case <-ticker.C:
-			t.connMu.Lock()
-			err := conn.WriteControl(websocket.PingMessage, nil, time.Now().Add(10*time.Second))
-			t.connMu.Unlock()
-
-			if err != nil {
-				slog.Debug("Ping failed", "error", err)
-				return
-			}
-		}
-	}
-}
-
 func (t *TailListener) displayWebhook(event, id string, rawBody []byte) {
 	style.LogWebhookReceived(event, id)
 
-	if !t.cfg.Verbose {
+	if !t.Cfg.Verbose {
 		return
 	}
 
