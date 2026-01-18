@@ -2,7 +2,6 @@ package cmd
 
 import (
 	"context"
-	"fmt"
 	"os"
 	"os/signal"
 	"syscall"
@@ -82,10 +81,5 @@ func listen(cmd *cobra.Command) error {
 		Mock:       listenMock,
 	}
 
-	err = utils.StartListener(params)
-	if err != nil {
-		return fmt.Errorf("couldn't start the webhook listener: %w", err)
-	}
-
-	return nil
+	return utils.StartListener(params)
 }

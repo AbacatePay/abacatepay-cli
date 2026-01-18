@@ -1,6 +1,8 @@
 package utils
 
 import (
+	"context"
+	"errors"
 	"fmt"
 	"log/slog"
 	"os"
@@ -29,5 +31,12 @@ func StartListener(params *StartListenerParams) error {
 	fmt.Fprintln(os.Stderr)
 	slog.Info("Listener stopped")
 
-	return err
+	if err != nil {
+		if errors.Is(err, context.Canceled) || errors.Is(err, context.DeadlineExceeded) {
+			return nil
+		}
+		return err
+	}
+
+	return nil
 }
