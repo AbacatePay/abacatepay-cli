@@ -85,10 +85,12 @@ func resendEvent(id string) error {
 			"Status":   fmt.Sprintf("%d %s", resp.StatusCode(), http.StatusText(resp.StatusCode())),
 			"Duration": fmt.Sprintf("%dms", duration.Milliseconds()),
 		})
-	} else {
-		fmt.Printf("\nServer responded with error status: %d\n", resp.StatusCode())
-		fmt.Println(string(resp.Body()))
+
+		return nil
 	}
+
+	fmt.Printf("\nServer responded with error status: %d\n", resp.StatusCode())
+	fmt.Println(string(resp.Body()))
 
 	return nil
 }

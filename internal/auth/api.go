@@ -1,3 +1,4 @@
+// Package auth...
 package auth
 
 import (
@@ -10,4 +11,3 @@ import (
 func ValidateToken(client *resty.Client, baseURL, token string) (*types.User, error) {
 	return &types.User{Name: "Mock User", Email: "mock@example.com"}, nil
 }
-

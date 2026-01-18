@@ -1,22 +1,16 @@
+// Package utils provides shared utilities for CLI setup, dependencies, and common operations.
 package utils
 
 import (
-	"bufio"
 	"context"
 	"fmt"
 	"log/slog"
-	"math/rand"
-	"os"
-	"strings"
 
 	"abacatepay-cli/internal/auth"
 	"abacatepay-cli/internal/client"
 	"abacatepay-cli/internal/config"
 	"abacatepay-cli/internal/logger"
-	"abacatepay-cli/internal/style"
-	"abacatepay-cli/internal/webhook"
 
-	"github.com/creativeprojects/go-selfupdate"
 	"github.com/go-resty/resty/v2"
 )
 
@@ -46,25 +40,6 @@ func SetupTransactionLogger() (*slog.Logger, error) {
 	return logger.NewTransactionLogger(logCfg)
 }
 
-func StartListener(params *StartListenerParams) error {
-	txLogger, err := SetupTransactionLogger()
-	if err != nil {
-		return fmt.Errorf("failed to initialize transaction logger: %w", err)
-	}
-
-	listener := webhook.NewListener(params.Config, params.Client, params.ForwardURL, params.Token, txLogger)
-
-	fmt.Fprintln(os.Stderr)
-	if params.Mock {
-		slog.Info("Running in MOCK mode", "interval", "5s")
-	}
-	slog.Info("Listening for webhooks", "forward_to", params.ForwardURL)
-	fmt.Fprintln(os.Stderr, "Press Ctrl+C to stop")
-	fmt.Fprintln(os.Stderr)
-
-	return listener.Listen(params.Context, params.Mock)
-}
-
 func GetConfig(local bool) *config.Config {
 	if !local {
 		return config.Default()
@@ -75,24 +50,6 @@ func GetConfig(local bool) *config.Config {
 
 func GetStore(cfg *config.Config) auth.TokenStore {
 	return auth.NewKeyringStore(cfg.ServiceName, cfg.TokenKey)
-}
-
-func PromptForURL(defaultURL string) string {
-	reader := bufio.NewReader(os.Stdin)
-
-	fmt.Fprintf(os.Stderr, "\nForward events to [%s]: ", defaultURL)
-
-	input, err := reader.ReadString('\n')
-	if err != nil {
-		return defaultURL
-	}
-
-	input = strings.TrimSpace(input)
-	if input != "" {
-		return input
-	}
-
-	return defaultURL
 }
 
 func SetupDependencies(local bool, verbose bool) *Dependencies {
@@ -132,69 +89,4 @@ func SetupClient(local, verbose bool) (*Dependencies, error) {
 
 	deps.Client.SetAuthToken(token)
 	return deps, nil
-}
-
-func CheckUpdate(ctx context.Context, currentVersion string) (*selfupdate.Release, bool, error) {
-	slug := "AbacatePay/abacatepay-cli"
-	latest, found, err := selfupdate.DetectLatest(ctx, selfupdate.ParseSlug(slug))
-	if err != nil {
-		return nil, false, err
-	}
-
-	if !found || currentVersion == "" || latest.LessOrEqual(currentVersion) {
-		return nil, false, nil
-	}
-
-	return latest, true, nil
-}
-
-func ShowUpdate(currentVersion string) {
-	latest, found, _ := CheckUpdate(context.Background(), currentVersion)
-
-	if !found {
-		return
-	}
-
-	msg := fmt.Sprintf(
-		"🥑 %s %s\n      Current: %s\n\n   To update, run:\n   %s",
-		style.TitleStyle.Render("Update available:"),
-		style.VersionStyle.Render(latest.Version()),
-		currentVersion,
-		style.CommandStyle.Render("abacatepay update"),
-	)
-
-	fmt.Fprintln(os.Stderr, style.BoxStyle.Render(msg))
-}
-
-func GenerateValidCPF(r *rand.Rand) string {
-	digits := make([]int, 11)
-	for i := range 9 {
-		digits[i] = r.Intn(10)
-	}
-
-	sum := 0
-	for i := range 9 {
-		sum += digits[i] * (10 - i)
-	}
-	digits[9] = calculateDigit(sum)
-
-	sum = 0
-	for i := range 10 {
-		sum += digits[i] * (11 - i)
-	}
-	digits[10] = calculateDigit(sum)
-
-	cpf := ""
-	for _, d := range digits {
-		cpf += fmt.Sprintf("%d", d)
-	}
-	return cpf
-}
-
-func calculateDigit(sum int) int {
-	remainder := (sum * 10) % 11
-	if remainder < 10 {
-		return remainder
-	}
-	return 0
 }
