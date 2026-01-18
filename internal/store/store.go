@@ -1,3 +1,4 @@
+// Package store provides token storage implementations for authentication credentials.
 package store
 
 import (
