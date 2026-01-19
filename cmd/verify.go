@@ -50,62 +50,84 @@ func init() {
 	rootCmd.AddCommand(verifyCmd)
 }
 
-func verify() error {
-	parts := strings.Split(verifySignature, ",")
-	var timestampStr, receivedSig string
+type signatureParts struct {
+	timestamp int64
+	signature string
+}
 
-	for _, part := range parts {
+func verify() error {
+	parts, err := parseSignatureHeader(verifySignature)
+	if err != nil {
+		style.PrintError(err.Error())
+		return err
+	}
+
+	expectedSig := computeSignature(verifySecret, parts.timestamp, verifyPayload)
+	isValid := hmac.Equal([]byte(parts.signature), []byte(expectedSig))
+
+	if !isValid {
+		style.PrintVerifyError(expectedSig, parts.signature)
+		return fmt.Errorf("signature mismatch")
+	}
+
+	printVerifySuccess(parts.timestamp, verifySecret)
+	return nil
+}
+
+func parseSignatureHeader(header string) (*signatureParts, error) {
+	var timestampStr, signature string
+
+	for part := range strings.SplitSeq(header, ",") {
 		kv := strings.SplitN(strings.TrimSpace(part), "=", 2)
 		if len(kv) != 2 {
 			continue
 		}
-		key, val := kv[0], kv[1]
-		switch key {
+
+		switch kv[0] {
 		case "t":
-			timestampStr = val
+			timestampStr = kv[1]
 		case "v1":
-			receivedSig = val
+			signature = kv[1]
 		}
 	}
 
-	if timestampStr == "" || receivedSig == "" {
-		style.PrintError("Invalid signature format. Expected format: t=TIMESTAMP,v1=SIGNATURE")
-		return fmt.Errorf("invalid signature format")
+	if timestampStr == "" || signature == "" {
+		return nil, fmt.Errorf("invalid signature format. Expected: t=TIMESTAMP,v1=SIGNATURE")
 	}
 
 	ts, err := strconv.ParseInt(timestampStr, 10, 64)
 	if err != nil {
-		style.PrintError("Invalid timestamp in signature header.")
-		return fmt.Errorf("invalid timestamp in signature header")
+		return nil, fmt.Errorf("invalid timestamp in signature header")
 	}
 
-	diff := time.Since(time.Unix(ts, 0))
-	var timeWarning string
-	if diff > 5*time.Minute {
-		timeWarning = fmt.Sprintf(" (Warning: Timestamp is %s old)", diff.Round(time.Second))
-	}
+	return &signatureParts{
+		timestamp: ts,
+		signature: signature,
+	}, nil
+}
 
-	signedPayload := fmt.Sprintf("%s.%s", timestampStr, verifyPayload)
-	mac := hmac.New(sha256.New, []byte(verifySecret))
+func computeSignature(secret string, timestamp int64, payload string) string {
+	signedPayload := fmt.Sprintf("%d.%s", timestamp, payload)
+	mac := hmac.New(sha256.New, []byte(secret))
 	mac.Write([]byte(signedPayload))
-	expectedSig := hex.EncodeToString(mac.Sum(nil))
+	return hex.EncodeToString(mac.Sum(nil))
+}
 
-	isValid := hmac.Equal([]byte(receivedSig), []byte(expectedSig))
-
+func printVerifySuccess(timestamp int64, secret string) {
 	fields := map[string]string{
-		"Timestamp": fmt.Sprintf("%d%s", ts, timeWarning),
-		"Secret":    maskSecret(verifySecret),
+		"Timestamp": formatTimestamp(timestamp),
+		"Secret":    maskSecret(secret),
+		"Status":    "VALID",
 	}
-
-	if !isValid {
-		style.PrintVerifyError(expectedSig, receivedSig)
-		return fmt.Errorf("signature mismatch")
-	}
-
-	fields["Status"] = "VALID ✅"
 	style.PrintSuccess("Signature Verified", fields)
+}
 
-	return nil
+func formatTimestamp(ts int64) string {
+	diff := time.Since(time.Unix(ts, 0))
+	if diff > 5*time.Minute {
+		return fmt.Sprintf("%d (Warning: %s old)", ts, diff.Round(time.Second))
+	}
+	return fmt.Sprintf("%d", ts)
 }
 
 func maskSecret(s string) string {
