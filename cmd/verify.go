@@ -70,13 +70,13 @@ func verify() error {
 
 	if timestampStr == "" || receivedSig == "" {
 		style.PrintError("Invalid signature format. Expected format: t=TIMESTAMP,v1=SIGNATURE")
-		return nil
+		return fmt.Errorf("invalid signature format")
 	}
 
 	ts, err := strconv.ParseInt(timestampStr, 10, 64)
 	if err != nil {
 		style.PrintError("Invalid timestamp in signature header.")
-		return nil
+		return fmt.Errorf("invalid timestamp in signature header")
 	}
 
 	diff := time.Since(time.Unix(ts, 0))
@@ -99,7 +99,7 @@ func verify() error {
 
 	if !isValid {
 		style.PrintVerifyError(expectedSig, receivedSig)
-		return nil
+		return fmt.Errorf("signature mismatch")
 	}
 
 	fields["Status"] = "VALID ✅"
