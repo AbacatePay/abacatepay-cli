@@ -32,24 +32,8 @@ func init() {
 	rootCmd.AddCommand(listenCmd)
 }
 
-func setupListenDeps() (*utils.Dependencies, string, error) {
-	if listenMock {
-		deps := utils.SetupDependencies(Local, Verbose)
-		return deps, "", nil
-	}
-
-	deps, err := utils.SetupClient(Local, Verbose)
-	if err != nil {
-		return nil, "", err
-	}
-
-	profile, _ := deps.Store.GetActiveProfile()
-	token, _ := deps.Store.GetNamed(profile)
-	return deps, token, nil
-}
-
 func listen(cmd *cobra.Command) error {
-	deps, token, err := setupListenDeps()
+	deps, err := utils.SetupClient(Local, Verbose)
 	if err != nil {
 		return err
 	}
@@ -76,7 +60,7 @@ func listen(cmd *cobra.Command) error {
 		Client:     deps.Client,
 		ForwardURL: forwardURL,
 		Store:      deps.Store,
-		Token:      token,
+		Token:      deps.Config.TokenKey,
 		Version:    cmd.Root().Version,
 		Mock:       listenMock,
 	}
