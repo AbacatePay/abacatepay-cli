@@ -39,18 +39,14 @@ func resendEvent(id string) error {
 		return fmt.Errorf("event %s found but has no raw payload stored", id)
 	}
 
-	defaultURL := "http://localhost:3000/webhooks/abacatepay"
-	if resendForwardURL == "" {
-		if entry.URL != "" {
-			defaultURL = entry.URL
-		}
+	defaultURL := utils.DefaultForwardURL
+	if entry.URL != "" {
+		defaultURL = entry.URL
+	}
 
-		if inputErr := style.Input("Forward event to", defaultURL, &resendForwardURL, nil); inputErr != nil {
-			return inputErr
-		}
-		if resendForwardURL == "" {
-			resendForwardURL = defaultURL
-		}
+	url, err := utils.GetForwardURL(resendForwardURL != "", resendForwardURL, defaultURL)
+	if err != nil {
+		return err
 	}
 
 	deps := utils.SetupDependencies(Local, Verbose)
@@ -60,14 +56,14 @@ func resendEvent(id string) error {
 	signature := crypto.SignWebhookPayload(secret, timestamp, []byte(entry.RawMessage))
 
 	style.LogSigningSecret(secret)
-	fmt.Printf("Resending event %s to %s...\n", id, resendForwardURL)
+	fmt.Printf("Resending event %s to %s...\n", id, url)
 
 	startTime := time.Now()
 	resp, err := deps.Client.R().
 		SetHeader("Content-Type", "application/json").
 		SetHeader("X-Abacate-Signature", fmt.Sprintf("t=%d,v1=%s", timestamp, signature)).
 		SetBody(entry.RawMessage).
-		Post(resendForwardURL)
+		Post(url)
 
 	duration := time.Since(startTime)
 
