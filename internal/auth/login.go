@@ -137,14 +137,32 @@ func getHostname() string {
 	return host
 }
 
-func Logout(st store.TokenStore) error {
-	if err := st.Delete(); err != nil {
-		return err
+func Logout(st store.TokenStore) (string, error) {
+	activeProfile, err := st.GetActiveProfile()
+	if err != nil {
+		return "", fmt.Errorf("failed to get active profile: %w", err)
 	}
 
-	slog.Info("Signed out")
+	if activeProfile == "" {
+		return "", fmt.Errorf("no active profile found")
+	}
 
-	return nil
+	if err := st.DeleteNamed(activeProfile); err != nil {
+		return "", fmt.Errorf("failed to delete token: %w", err)
+	}
+
+	profiles, _ := st.List()
+	if len(profiles) > 0 {
+		_ = st.SetActiveProfile(profiles[0])
+
+		slog.Info("Signed out", "profile", activeProfile, "switched_to", profiles[0])
+		return activeProfile, nil
+	}
+
+	_ = st.SetActiveProfile("")
+	slog.Info("Signed out", "profile", activeProfile)
+
+	return activeProfile, nil
 }
 
 func pollForToken(ctx context.Context, cfg *config.Config, client *resty.Client, deviceCode string) (string, error) {
