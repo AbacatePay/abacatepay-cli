@@ -45,9 +45,8 @@ func resendEvent(id string) error {
 			defaultURL = entry.URL
 		}
 
-		err := style.Input("Forward event to", defaultURL, &resendForwardURL, nil)
-		if err != nil {
-			return err
+		if inputErr := style.Input("Forward event to", defaultURL, &resendForwardURL, nil); inputErr != nil {
+			return inputErr
 		}
 		if resendForwardURL == "" {
 			resendForwardURL = defaultURL

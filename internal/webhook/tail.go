@@ -36,7 +36,9 @@ func (t *TailListener) Listen(ctx context.Context) error {
 func (t *TailListener) readLoop(ctx context.Context, conn *websocket.Conn) error {
 	t.SetupConn(conn)
 
-	go t.Heartbeat(ctx, conn)
+	go func() {
+		_ = t.Heartbeat(ctx, conn)
+	}()
 
 	for {
 		select {

@@ -42,7 +42,7 @@ func ConnectWithRetry(ctx context.Context, cfg Config, handler Handler) error {
 			if cfg.MaxRetries > 0 && retries >= cfg.MaxRetries {
 				errMsg := fmt.Sprintf("Failed to connect to %s after %d retries: %v", cfg.URL, retries, err)
 				style.PrintError(errMsg)
-				return fmt.Errorf(errMsg)
+				return fmt.Errorf("%s", errMsg)
 			}
 
 			slog.Warn(
@@ -75,4 +75,3 @@ func ConnectWithRetry(ctx context.Context, cfg Config, handler Handler) error {
 		conn.Close()
 	}
 }
-

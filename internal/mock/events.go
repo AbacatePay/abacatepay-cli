@@ -70,4 +70,3 @@ func MockPayoutEvent(isDone bool) *types.PayoutEvent {
 		Event:   event,
 	}
 }
-
