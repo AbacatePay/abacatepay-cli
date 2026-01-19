@@ -13,8 +13,7 @@ import (
 
 const DefaultForwardURL = "http://localhost:3000/webhooks/abacatepay"
 
-// ValidateForwardURL valida formato da URL (http/https com host válido)
-func ValidateForwardURL(s string) error {
+func validateForwardURL(s string) error {
 	u, err := url.ParseRequestURI(s)
 	if err != nil {
 		return fmt.Errorf("invalid URL format: %w", err)
@@ -28,9 +27,8 @@ func ValidateForwardURL(s string) error {
 	return nil
 }
 
-// PromptForwardURL pede URL ao usuário com validação
-func PromptForwardURL(defaultURL string, result *string) error {
-	if err := style.Input("Forward events to", defaultURL, result, ValidateForwardURL); err != nil {
+func promptForwardURL(defaultURL string, result *string) error {
+	if err := style.Input("Forward events to", defaultURL, result, validateForwardURL); err != nil {
 		return err
 	}
 	if *result == "" {
@@ -39,17 +37,16 @@ func PromptForwardURL(defaultURL string, result *string) error {
 	return nil
 }
 
-// GetForwardURL retorna URL da flag ou pede ao usuário
-func GetForwardURL(flagChanged bool, flagValue string, defaultURL string) (string, error) {
-	if flagChanged {
-		if err := ValidateForwardURL(flagValue); err != nil {
+func GetForwardURL(flagValue string) (string, error) {
+	if flagValue != "" {
+		if err := validateForwardURL(flagValue); err != nil {
 			return "", err
 		}
 		return flagValue, nil
 	}
 
 	var result string
-	if err := PromptForwardURL(defaultURL, &result); err != nil {
+	if err := promptForwardURL(DefaultForwardURL, &result); err != nil {
 		return "", err
 	}
 	return result, nil
