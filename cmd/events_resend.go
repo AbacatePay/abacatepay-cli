@@ -44,7 +44,7 @@ func resendEvent(id string) error {
 		defaultURL = entry.URL
 	}
 
-	url, err := utils.GetForwardURL(resendForwardURL != "", resendForwardURL, defaultURL)
+	url, err := utils.GetForwardURL(resendForwardURL, defaultURL)
 	if err != nil {
 		return err
 	}

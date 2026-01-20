@@ -37,7 +37,7 @@ func listen(cmd *cobra.Command) error {
 		return err
 	}
 
-	url, err := utils.GetForwardURL(forwardURL)
+	url, err := utils.GetForwardURL(forwardURL, utils.DefaultForwardURL)
 	if err != nil {
 		return err
 	}
