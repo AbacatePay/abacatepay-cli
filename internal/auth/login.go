@@ -29,19 +29,11 @@ type LoginParams struct {
 
 func Login(params *LoginParams) error {
 	if params.APIKey != "" {
-		return saveAPIKey(params)
+		return loginWithAPIKey(params)
 	}
 
-	// For local mode, mock the token
 	if params.Config.APIBaseURL == "http://191.252.202.128:8080" {
 		params.APIKey = "mock_token_local_dev"
-		return saveAPIKey(params)
-	}
-
-	return deviceCodeFlow(params)
-}
-
-	if params.APIKey != "" {
 		return loginWithAPIKey(params)
 	}
 

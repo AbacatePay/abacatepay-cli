@@ -172,7 +172,7 @@ func printProfilesTable(profiles []Profile) {
 		shortKey := formatShortToken(p.Token)
 		activeMarker := ""
 		if p.Active {
-			activeMarker = "Yes"
+			activeMarker = "🥑"
 		}
 		rows = append(rows, []string{p.Name, shortKey, activeMarker})
 	}
