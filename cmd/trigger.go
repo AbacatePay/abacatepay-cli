@@ -34,7 +34,7 @@ func trigger(evt string) error {
 }
 
 func handleEvent(deps *utils.Dependencies, evt string) error {
-	service := payments.New(deps.Client, deps.Config.APIBaseURL)
+	service := payments.New(deps.Client, deps.Config.APIBaseURL, Verbose)
 
 	switch evt {
 	case "billing.paid":
