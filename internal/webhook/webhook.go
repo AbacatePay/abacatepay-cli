@@ -41,4 +41,3 @@ func NewListener(cfg *config.Config, client *resty.Client, forwardURL, token str
 		signingSecret: "whsec_mock_" + hex.EncodeToString([]byte(time.Now().Format("150405"))),
 	}
 }
-

@@ -13,7 +13,7 @@ import (
 func CreatePixQRCodeMock() *v1.RESTPostCreateQRCodePixBody {
 	expires := 15 * 30
 	desc := "salve"
-	gofakeit.Seed(0)
+	_ = gofakeit.Seed(0)
 	r := rand.New(rand.NewSource(time.Now().UnixNano()))
 
 	return &v1.RESTPostCreateQRCodePixBody{

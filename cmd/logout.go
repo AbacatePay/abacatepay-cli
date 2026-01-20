@@ -2,6 +2,7 @@ package cmd
 
 import (
 	"abacatepay-cli/internal/auth"
+	"abacatepay-cli/internal/output"
 	"abacatepay-cli/internal/utils"
 
 	"github.com/spf13/cobra"
@@ -21,10 +22,19 @@ func init() {
 }
 
 func logout() error {
-	deps, err := utils.SetupClient(Local, Verbose)
+	deps := utils.SetupDependencies(Local, Verbose)
+
+	profile, err := auth.Logout(deps.Store)
 	if err != nil {
 		return err
 	}
 
-	return auth.Logout(deps.Store)
+	output.Print(output.Result{
+		Title: "Signed out successfully",
+		Fields: map[string]string{
+			"Profile": profile,
+		},
+	})
+
+	return nil
 }

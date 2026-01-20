@@ -35,7 +35,7 @@ func (b *BaseListener) Heartbeat(ctx context.Context, conn *websocket.Conn) erro
 		select {
 		case <-ctx.Done():
 			b.ConnMu.Lock()
-			conn.WriteControl(
+			_ = conn.WriteControl(
 				websocket.CloseMessage,
 				websocket.FormatCloseMessage(websocket.CloseNormalClosure, ""),
 				time.Now().Add(time.Second),
@@ -71,6 +71,6 @@ func (b *BaseListener) WSConfig() ws.Config {
 
 func (b *BaseListener) SetReadDeadline(conn *websocket.Conn) {
 	b.ConnMu.Lock()
-	conn.SetReadDeadline(time.Now().Add(90 * time.Second))
+	_ = conn.SetReadDeadline(time.Now().Add(90 * time.Second))
 	b.ConnMu.Unlock()
 }

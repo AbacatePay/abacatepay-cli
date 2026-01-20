@@ -80,8 +80,7 @@ func handleEvent(deps *utils.Dependencies, evt string) error {
 
 		fmt.Printf("\nTip: Use 'abacatepay events resend %s' to send this mock to your local server.\n", mockEvent.ID)
 
-		// Optional: We could automatically append this mock to the local log file
-		// so it appears in 'logs list' immediately.
+		// NOTE: We could automatically append this mock to the local log file, so it appears in 'logs list' immediately.
 		return nil
 
 	default:
