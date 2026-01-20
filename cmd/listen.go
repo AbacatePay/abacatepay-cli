@@ -6,7 +6,6 @@ import (
 	"os/signal"
 	"syscall"
 
-	"abacatepay-cli/internal/style"
 	"abacatepay-cli/internal/utils"
 
 	"github.com/spf13/cobra"
@@ -38,27 +37,19 @@ func listen(cmd *cobra.Command) error {
 		return err
 	}
 
-	defaultURL := "http://localhost:3000/webhooks/abacatepay"
-	if !cmd.Flags().Changed("forward-to") {
-		err := style.Input("Forward events to", defaultURL, &forwardURL, nil)
-		if err != nil {
-			return err
-		}
-
-		if forwardURL == "" {
-			forwardURL = defaultURL
-		}
+	url, err := utils.GetForwardURL(forwardURL, utils.DefaultForwardURL)
+	if err != nil {
+		return err
 	}
 
 	ctx, cancel := signal.NotifyContext(context.Background(), os.Interrupt, syscall.SIGTERM)
-
 	defer cancel()
 
 	params := &utils.StartListenerParams{
 		Context:    ctx,
 		Config:     deps.Config,
 		Client:     deps.Client,
-		ForwardURL: forwardURL,
+		ForwardURL: url,
 		Store:      deps.Store,
 		Token:      deps.Config.TokenKey,
 		Version:    cmd.Root().Version,

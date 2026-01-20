@@ -93,7 +93,6 @@ func PrintTable(headers []string, rows [][]string) {
 	t.StyleFunc(func(row, col int) lipgloss.Style {
 		if row == 0 {
 			return lipgloss.NewStyle().
-				Foreground(Palette.Green).
 				Bold(true).
 				Align(lipgloss.Center)
 		}

@@ -57,7 +57,7 @@ func createPayment(method string) error {
 		}
 	}
 
-	service := payments.New(deps.Client, deps.Config.APIBaseURL)
+	service := payments.New(deps.Client, deps.Config.APIBaseURL, Verbose)
 
 	switch method {
 	case "pix", "pix_qrcode":

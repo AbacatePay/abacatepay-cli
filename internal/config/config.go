@@ -18,7 +18,7 @@ func Default() *Config {
 		WebSocketBaseURL:  "wss://ws.abacatepay.com/ws",
 		ServiceName:       "abacatepay-cli",
 		TokenKey:          "auth-token",
-		HTTPTimeout:       10 * time.Second,
+		HTTPTimeout:       15 * time.Second,
 		DefaultForwardURL: "http://localhost:3000/webhooks",
 		Verbose:           false,
 	}
