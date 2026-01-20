@@ -2,7 +2,6 @@ package cmd
 
 import (
 	"abacatepay-cli/internal/payments"
-	"abacatepay-cli/internal/utils"
 
 	"github.com/spf13/cobra"
 )
@@ -21,12 +20,7 @@ func init() {
 }
 
 func simulate(paymentID string) error {
-	deps, err := utils.SetupClient(Local, Verbose)
-	if err != nil {
-		return err
-	}
-
-	pixService := payments.New(deps.Client, deps.Config.APIBaseURL)
-
-	return pixService.SimulatePixQRCodePayment(paymentID, false)
+	return payments.ExecutePaymentAction(Local, Verbose, func(s *payments.Service) error {
+		return s.SimulatePixQRCodePayment(paymentID, false)
+	})
 }

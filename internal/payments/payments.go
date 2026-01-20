@@ -6,6 +6,7 @@ import (
 	"net/http"
 
 	"abacatepay-cli/internal/output"
+	"abacatepay-cli/internal/style"
 	"abacatepay-cli/internal/types"
 
 	"github.com/go-resty/resty/v2"
@@ -14,16 +15,35 @@ import (
 type Service struct {
 	Client  *resty.Client
 	BaseURL string
+	Verbose bool
 }
 
-func New(client *resty.Client, baseURL string) *Service {
+func New(client *resty.Client, baseURL string, verbose bool) *Service {
 	return &Service{
 		Client:  client,
 		BaseURL: baseURL,
+		Verbose: verbose,
 	}
 }
 
 func (s *Service) executeRequest(req *resty.Request, method, url string, result any) error {
+	if s.Verbose {
+		fmt.Printf("Request: %s %s\n", method, url)
+		if body := req.Body; body != nil {
+			if b, ok := body.([]byte); ok {
+				var pretty any
+				if err := json.Unmarshal(b, &pretty); err == nil {
+					style.PrintJSON(pretty)
+				} else {
+					fmt.Println(string(b))
+				}
+			} else {
+				style.PrintJSON(body)
+			}
+		}
+		fmt.Println()
+	}
+
 	var resp *resty.Response
 	var err error
 
@@ -40,12 +60,21 @@ func (s *Service) executeRequest(req *resty.Request, method, url string, result 
 		return fmt.Errorf("failed to send request: %w", err)
 	}
 
+	if s.Verbose {
+		fmt.Printf("Response: %s\n", resp.Status())
+	}
+
 	if resp.IsError() {
 		return s.handleAPIError(resp)
 	}
 
 	if err := json.Unmarshal(resp.Body(), result); err != nil {
 		return fmt.Errorf("failed to parse response: %w", err)
+	}
+
+	if s.Verbose {
+		style.PrintJSON(result)
+		fmt.Println()
 	}
 
 	return nil
