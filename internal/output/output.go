@@ -1,10 +1,7 @@
 package output
 
 import (
-	"encoding/json"
 	"fmt"
-	"log/slog"
-	"os"
 	"sync"
 
 	"abacatepay-cli/internal/style"
@@ -110,19 +107,11 @@ func printJSON(r Result) {
 		}
 	}
 
-	encoder := json.NewEncoder(os.Stdout)
-	encoder.SetIndent("", "  ")
-	if err := encoder.Encode(data); err != nil {
-		slog.Debug("failed to encode JSON output", "error", err)
-	}
+	style.PrintJSON(data)
 }
 
 func printJSONError(msg string) {
-	encoder := json.NewEncoder(os.Stdout)
-	encoder.SetIndent("", "  ")
-	if err := encoder.Encode(map[string]any{"error": msg}); err != nil {
-		slog.Debug("failed to encode JSON error output", "error", err)
-	}
+	style.PrintJSON(map[string]any{"error": msg})
 }
 
 func printText(r Result) {
@@ -165,19 +154,15 @@ func printProfilesJSON(profiles []Profile, activeProfile string) {
 	profileData := make([]map[string]any, 0, len(profiles))
 	for _, p := range profiles {
 		profileData = append(profileData, map[string]any{
-			"name":   p.Name,
-			"active": p.Active,
+			"name": p.Name,
+			"key":  formatShortToken(p.Token),
 		})
 	}
 
-	encoder := json.NewEncoder(os.Stdout)
-	encoder.SetIndent("", "  ")
-	if err := encoder.Encode(map[string]any{
+	style.PrintJSON(map[string]any{
 		"profiles": profileData,
 		"active":   activeProfile,
-	}); err != nil {
-		slog.Debug("failed to encode profiles JSON output", "error", err)
-	}
+	})
 }
 
 func printProfilesTable(profiles []Profile) {
