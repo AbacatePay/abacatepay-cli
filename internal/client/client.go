@@ -9,6 +9,5 @@ import (
 func New(cfg *config.Config) *resty.Client {
 	return resty.New().
 		SetTimeout(cfg.HTTPTimeout).
-		SetHeader("User-Agent", "abacatepay-cli/1.0").
-		SetDebug(cfg.Verbose)
+		SetHeader("User-Agent", "abacatepay-cli/1.0")
 }

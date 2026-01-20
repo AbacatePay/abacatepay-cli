@@ -37,7 +37,7 @@ func promptForwardURL(defaultURL string, result *string) error {
 	return nil
 }
 
-func GetForwardURL(flagValue string) (string, error) {
+func GetForwardURL(flagValue, defaultURL string) (string, error) {
 	if flagValue != "" {
 		if err := validateForwardURL(flagValue); err != nil {
 			return "", err
@@ -46,7 +46,7 @@ func GetForwardURL(flagValue string) (string, error) {
 	}
 
 	var result string
-	if err := promptForwardURL(DefaultForwardURL, &result); err != nil {
+	if err := promptForwardURL(defaultURL, &result); err != nil {
 		return "", err
 	}
 	return result, nil
