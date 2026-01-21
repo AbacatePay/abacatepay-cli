@@ -1,9 +1,7 @@
 package cmd
 
 import (
-	"encoding/json"
 	"fmt"
-	"os"
 
 	"abacatepay-cli/internal/logger"
 	"abacatepay-cli/internal/output"
@@ -59,12 +57,11 @@ func listLogs() error {
 }
 
 func printLogsJSON(entries []logger.LogEntry) error {
-	encoder := json.NewEncoder(os.Stdout)
-	encoder.SetIndent("", "  ")
-	return encoder.Encode(map[string]any{
+	style.PrintJSON(map[string]any{
 		"logs":  entries,
 		"count": len(entries),
 	})
+	return nil
 }
 
 func printLogsTable(entries []logger.LogEntry) error {
