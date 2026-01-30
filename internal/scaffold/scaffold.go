@@ -36,7 +36,7 @@ func (pb *ProjectBuilder) Build() error {
 		return err
 	}
 
-	pb.templatesDir = filepath.Join(tempDir, "templates")
+	pb.templatesDir = tempDir
 
 	if err := EnsureDir(pb.projectPath, 0o755); err != nil {
 		return fmt.Errorf("failed to create project directory: %w", err)
@@ -190,4 +190,3 @@ func ScaffoldProject(cfg Config, targetDir string) error {
 
 	return builder.Build()
 }
-
