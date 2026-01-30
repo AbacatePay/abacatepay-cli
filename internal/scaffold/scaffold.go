@@ -11,7 +11,6 @@ import (
 	"strings"
 )
 
-// Config holds the scaffold configuration
 type Config struct {
 	ProjectName string
 	Framework   string
@@ -19,52 +18,43 @@ type Config struct {
 	BetterAuth  bool
 }
 
-// ScaffoldProject creates a new project by composing templates
 func ScaffoldProject(cfg Config, targetDir string) error {
-	// Create temporary directory for cloning
 	tempDir, err := os.MkdirTemp("", "abacate-templates-*")
 	if err != nil {
 		return fmt.Errorf("failed to create temp directory: %w", err)
 	}
 	defer os.RemoveAll(tempDir)
 
-	// Clone templates repository
 	if err := cloneTemplates(tempDir); err != nil {
 		return fmt.Errorf("failed to clone templates: %w", err)
 	}
 
 	templatesDir := filepath.Join(tempDir, "templates")
 
-	// Create project directory
 	projectPath := filepath.Join(targetDir, cfg.ProjectName)
 	if err := os.MkdirAll(projectPath, 0o755); err != nil {
 		return fmt.Errorf("failed to create project directory: %w", err)
 	}
 
-	// 1. Copy base template
 	basePath := filepath.Join(templatesDir, "base", cfg.Framework)
 	if err := copyDir(basePath, projectPath); err != nil {
 		return fmt.Errorf("failed to copy base template: %w", err)
 	}
 
-	// 2. Apply linter
 	if err := applyLinter(templatesDir, cfg.Framework, cfg.Linter, projectPath); err != nil {
 		return fmt.Errorf("failed to apply linter: %w", err)
 	}
 
-	// 3. Apply BetterAuth if enabled
 	if cfg.BetterAuth {
 		if err := applyBetterAuth(templatesDir, cfg.Framework, projectPath); err != nil {
 			return fmt.Errorf("failed to apply better-auth: %w", err)
 		}
 	}
 
-	// 4. Merge package.json files
 	if err := mergePackageJSONs(projectPath, templatesDir, cfg.Framework, cfg.Linter, cfg.BetterAuth); err != nil {
 		return fmt.Errorf("failed to merge package.json: %w", err)
 	}
 
-	// 5. Update project name in package.json
 	if err := updateProjectName(projectPath, cfg.ProjectName); err != nil {
 		return fmt.Errorf("failed to update project name: %w", err)
 	}
@@ -72,7 +62,6 @@ func ScaffoldProject(cfg Config, targetDir string) error {
 	return nil
 }
 
-// cloneTemplates clones the templates repository
 func cloneTemplates(destDir string) error {
 	repoURL := "https://github.com/AbacatePay/templates.git"
 
@@ -87,13 +76,13 @@ func cloneTemplates(destDir string) error {
 	return nil
 }
 
-// applyLinter applies the linter configuration to the project
 func applyLinter(templatesDir, framework, linter, projectPath string) error {
 	linterDir := filepath.Join(templatesDir, "linters", linter)
 
-	// Copy config file
 	var configFile string
-	if linter == "eslint" {
+
+	switch linter {
+	case "eslint":
 		if framework == "next" {
 			configFile = "eslint.config.next.js"
 		} else {
@@ -105,23 +94,22 @@ func applyLinter(templatesDir, framework, linter, projectPath string) error {
 		); err != nil {
 			return err
 		}
-	} else if linter == "biome" {
+	case "biome":
 		if err := copyFile(
 			filepath.Join(linterDir, "biome.json"),
 			filepath.Join(projectPath, "biome.json"),
 		); err != nil {
 			return err
 		}
+
 	}
 
 	return nil
 }
 
-// applyBetterAuth applies better-auth feature to the project
 func applyBetterAuth(templatesDir, framework, projectPath string) error {
 	authDir := filepath.Join(templatesDir, "features", "betterauth", framework)
 
-	// Copy auth files
 	if err := copyDir(authDir, projectPath); err != nil {
 		return err
 	}
@@ -129,29 +117,24 @@ func applyBetterAuth(templatesDir, framework, projectPath string) error {
 	return nil
 }
 
-// mergePackageJSONs merges all package.json fragments into the main package.json
 func mergePackageJSONs(projectPath, templatesDir, framework, linter string, betterAuth bool) error {
 	mainPackagePath := filepath.Join(projectPath, "package.json")
 
-	// Read main package.json
 	mainPkg, err := readPackageJSON(mainPackagePath)
 	if err != nil {
 		return err
 	}
 
-	// Merge linter package.json
 	linterPackagePath := filepath.Join(templatesDir, "linters", linter, "package.json")
 	if err := mergePackageJSON(mainPkg, linterPackagePath); err != nil {
 		return err
 	}
 
-	// Merge linter scripts
 	linterScriptsPath := filepath.Join(templatesDir, "linters", linter, "scripts.json")
 	if err := mergeScripts(mainPkg, linterScriptsPath); err != nil {
 		return err
 	}
 
-	// Merge better-auth if enabled
 	if betterAuth {
 		authPackagePath := filepath.Join(templatesDir, "features", "betterauth", framework, "package.json")
 		if err := mergePackageJSON(mainPkg, authPackagePath); err != nil {
