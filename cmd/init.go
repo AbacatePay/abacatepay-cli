@@ -116,7 +116,7 @@ func initializeProject(name string) error {
 	fmt.Println("✅ Project created successfully!\n")
 	fmt.Println("Next steps:")
 
-	steps := scaffold.GetNextSteps(scaffoldCfg)
+	steps := scaffoldCfg.GetNextSteps()
 	for _, step := range steps {
 		fmt.Printf("  %s\n", step)
 	}
