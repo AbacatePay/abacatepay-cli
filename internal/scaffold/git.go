@@ -7,7 +7,7 @@ import (
 )
 
 // GitRepositoryURL is the URL of the templates repository.
-const GitRepositoryURL = "https://github.com/AbacatePay/templates.git"
+const GitRepositoryURL = "https://github.com/albuquerquesz/abacatepay-templates.git"
 
 // GitClone clones the templates repository into the specified directory.
 // It performs a shallow clone (--depth 1) to save bandwidth and time.
