@@ -46,7 +46,6 @@ func initializeProject(name string) error {
 		}
 	}
 
-	// Validate project name
 	if err := scaffold.ValidateProjectName(cfg.Name); err != nil {
 		return err
 	}
@@ -75,7 +74,6 @@ func initializeProject(name string) error {
 		return err
 	}
 
-	// Show configuration summary
 	betterAuthLabel := "No"
 	if cfg.BetterAuth {
 		betterAuthLabel = "Yes"
@@ -98,7 +96,6 @@ func initializeProject(name string) error {
 		"BetterAuth": betterAuthLabel,
 	})
 
-	// Scaffold the project
 	fmt.Printf("\n🥑 Creating project %s...\n\n", cfg.Name)
 
 	scaffoldCfg := scaffold.Config{
@@ -112,8 +109,7 @@ func initializeProject(name string) error {
 		return fmt.Errorf("failed to scaffold project: %w", err)
 	}
 
-	// Show next steps
-	fmt.Println("✅ Project created successfully!\n")
+	fmt.Println("✅ Project created successfully!")
 	fmt.Println("Next steps:")
 
 	steps := scaffoldCfg.GetNextSteps()

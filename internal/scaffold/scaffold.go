@@ -6,8 +6,6 @@ import (
 	"path/filepath"
 )
 
-const templatesRepoURL = "https://github.com/albuquerquesz/abacatepay-templates.git"
-
 type ProjectBuilder struct {
 	config       Config
 	templatesDir string

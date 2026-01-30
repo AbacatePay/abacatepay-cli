@@ -7,8 +7,6 @@ import (
 	"path/filepath"
 )
 
-// CopyFile copies a single file from src to dst.
-// It creates parent directories as needed.
 func CopyFile(src, dst string) error {
 	srcFile, err := os.Open(src)
 	if err != nil {
@@ -16,8 +14,8 @@ func CopyFile(src, dst string) error {
 	}
 	defer srcFile.Close()
 
-	// Ensure parent directory exists
-	if err := os.MkdirAll(filepath.Dir(dst), 0o755); err != nil {
+	err = os.MkdirAll(filepath.Dir(dst), 0o755)
+	if err != nil {
 		return fmt.Errorf("failed to create directory for %s: %w", dst, err)
 	}
 
@@ -34,20 +32,16 @@ func CopyFile(src, dst string) error {
 	return nil
 }
 
-// CopyDir recursively copies a directory from src to dst.
-// It skips node_modules and .git directories.
 func CopyDir(src, dst string) error {
 	return filepath.Walk(src, func(path string, info os.FileInfo, err error) error {
 		if err != nil {
 			return err
 		}
 
-		// Skip node_modules and .git directories
 		if info.IsDir() && (info.Name() == "node_modules" || info.Name() == ".git") {
 			return filepath.SkipDir
 		}
 
-		// Calculate relative path
 		relPath, err := filepath.Rel(src, path)
 		if err != nil {
 			return fmt.Errorf("failed to calculate relative path: %w", err)
@@ -63,18 +57,15 @@ func CopyDir(src, dst string) error {
 	})
 }
 
-// EnsureDir creates a directory if it doesn't exist.
 func EnsureDir(path string, perm os.FileMode) error {
 	return os.MkdirAll(path, perm)
 }
 
-// DirExists checks if a directory exists.
 func DirExists(path string) bool {
 	info, err := os.Stat(path)
 	return err == nil && info.IsDir()
 }
 
-// FileExists checks if a file exists.
 func FileExists(path string) bool {
 	info, err := os.Stat(path)
 	return err == nil && !info.IsDir()
