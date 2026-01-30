@@ -159,7 +159,6 @@ func mergePackageJSONs(projectPath, templatesDir, framework, linter string, bett
 		}
 	}
 
-	// Write merged package.json
 	if err := writePackageJSON(mainPackagePath, mainPkg); err != nil {
 		return err
 	}
@@ -167,14 +166,13 @@ func mergePackageJSONs(projectPath, templatesDir, framework, linter string, bett
 	return nil
 }
 
-// readPackageJSON reads and parses a package.json file
-func readPackageJSON(path string) (map[string]interface{}, error) {
+func readPackageJSON(path string) (map[string]any, error) {
 	data, err := os.ReadFile(path)
 	if err != nil {
 		return nil, err
 	}
 
-	var pkg map[string]interface{}
+	var pkg map[string]any
 	if err := json.Unmarshal(data, &pkg); err != nil {
 		return nil, err
 	}
@@ -182,8 +180,7 @@ func readPackageJSON(path string) (map[string]interface{}, error) {
 	return pkg, nil
 }
 
-// mergePackageJSON merges a package.json file into the main package
-func mergePackageJSON(main map[string]interface{}, mergePath string) error {
+func mergePackageJSON(main map[string]any, mergePath string) error {
 	data, err := os.ReadFile(mergePath)
 	if err != nil {
 		if os.IsNotExist(err) {
@@ -192,38 +189,31 @@ func mergePackageJSON(main map[string]interface{}, mergePath string) error {
 		return err
 	}
 
-	var merge map[string]interface{}
+	var merge map[string]any
 	if err := json.Unmarshal(data, &merge); err != nil {
 		return err
 	}
 
-	// Merge dependencies
-	if deps, ok := merge["dependencies"].(map[string]interface{}); ok {
+	if deps, ok := merge["dependencies"].(map[string]any); ok {
 		if main["dependencies"] == nil {
-			main["dependencies"] = make(map[string]interface{})
+			main["dependencies"] = make(map[string]any)
 		}
-		mainDeps := main["dependencies"].(map[string]interface{})
-		for k, v := range deps {
-			mainDeps[k] = v
-		}
+		mainDeps := main["dependencies"].(map[string]any)
+		maps.Copy(deps, mainDeps)
 	}
 
-	// Merge devDependencies
-	if devDeps, ok := merge["devDependencies"].(map[string]interface{}); ok {
+	if devDeps, ok := merge["devDependencies"].(map[string]any); ok {
 		if main["devDependencies"] == nil {
-			main["devDependencies"] = make(map[string]interface{})
+			main["devDependencies"] = make(map[string]any)
 		}
-		mainDevDeps := main["devDependencies"].(map[string]interface{})
-		for k, v := range devDeps {
-			mainDevDeps[k] = v
-		}
+		mainDevDeps := main["devDependencies"].(map[string]any)
+		maps.Copy(devDeps, mainDevDeps)
 	}
 
 	return nil
 }
 
-// mergeScripts merges scripts from a scripts.json file
-func mergeScripts(main map[string]interface{}, scriptsPath string) error {
+func mergeScripts(main map[string]any, scriptsPath string) error {
 	data, err := os.ReadFile(scriptsPath)
 	if err != nil {
 		if os.IsNotExist(err) {
