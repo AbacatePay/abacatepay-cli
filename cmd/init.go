@@ -3,6 +3,7 @@ package cmd
 import (
 	"fmt"
 
+	"abacatepay-cli/internal/scaffold"
 	"abacatepay-cli/internal/style"
 
 	"github.com/spf13/cobra"
@@ -37,19 +38,21 @@ func initializeProject(name string) error {
 
 	if name != "" {
 		cfg.Name = name
-	} else {
-		if err := style.Input("Project name", "my-app", &cfg.Name, func(s string) error {
-			if s == "" {
-				return fmt.Errorf("project name is required")
-			}
-			return nil
-		}); err != nil {
+	}
+
+	if cfg.Name == "" {
+		if err := style.Input("Project name", "my-app", &cfg.Name, scaffold.ValidateProjectName); err != nil {
 			return err
 		}
 	}
 
+	// Validate project name
+	if err := scaffold.ValidateProjectName(cfg.Name); err != nil {
+		return err
+	}
+
 	frameworkOptions := map[string]string{
-		"Next.js": "nextjs",
+		"Next.js": "next",
 		"Elysia":  "elysia",
 	}
 	framework, err := style.Select("Which framework do you want to use?", frameworkOptions)
@@ -72,6 +75,7 @@ func initializeProject(name string) error {
 		return err
 	}
 
+	// Show configuration summary
 	betterAuthLabel := "No"
 	if cfg.BetterAuth {
 		betterAuthLabel = "Yes"
@@ -93,6 +97,29 @@ func initializeProject(name string) error {
 		"Linter":     linterLabel,
 		"BetterAuth": betterAuthLabel,
 	})
+
+	// Scaffold the project
+	fmt.Printf("\n🥑 Creating project %s...\n\n", cfg.Name)
+
+	scaffoldCfg := scaffold.Config{
+		ProjectName: cfg.Name,
+		Framework:   cfg.Framework,
+		Linter:      cfg.Linter,
+		BetterAuth:  cfg.BetterAuth,
+	}
+
+	if err := scaffold.ScaffoldProject(scaffoldCfg, "."); err != nil {
+		return fmt.Errorf("failed to scaffold project: %w", err)
+	}
+
+	// Show next steps
+	fmt.Println("✅ Project created successfully!\n")
+	fmt.Println("Next steps:")
+
+	steps := scaffold.GetNextSteps(scaffoldCfg)
+	for _, step := range steps {
+		fmt.Printf("  %s\n", step)
+	}
 
 	return nil
 }
