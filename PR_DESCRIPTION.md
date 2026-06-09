@@ -1,37 +1,23 @@
 ## Summary
 
-Adds `init` command that initializes new projects with interactive scaffolding, allowing choice between frameworks (Next.js/Elysia), linters (ESLint/Biome), and optional BetterAuth configuration.
+- Fixes Go installation by using the canonical module path and adding `cmd/abacatepay` so Go users can install the expected `abacatepay` binary.
+- Narrows the CLI to the requested supported surface: auth, webhook listening, and dev-mode payment simulation.
+- Updates payment simulation to API v2: `POST /v2/transparents/simulate-payment?id=<charge-id>`.
+- Removes unsupported commands/features from the current codebase until there is documented API v2 parity.
+- Updates README installation and usage docs.
 
-## Related Issue
+Closes #32.
 
-Closes (N/A)
+## Validation
 
-## Why
+- `go mod tidy`
+- `go test ./...`
+- `go build ./...`
+- `GOBIN=/tmp/abacatepay-cli-bin go install .` and root CLI help smoke test
+- `GOBIN=/tmp/abacatepay-bin go install ./cmd/abacatepay` and `abacatepay` help smoke test
 
-The CLI needed a simple way to create new projects integrated with AbacatePay. Before, developers had to manually clone templates and configure everything by hand. The `init` command automates this entire process with an interactive onboarding flow.
+## Notes
 
-## What changed
+The `--local` flag is kept as a backwards-compatible no-op because API v2 uses the same public endpoint for production and dev mode; the API key determines the environment.
 
-- Created `cmd/init.go` with interactive onboarding flow using prompts from the `style` package
-- Created `internal/scaffold/config.go` with `Config` structure and validation methods
-- Created `internal/scaffold/git.go` for repository clone operations
-- Created `internal/scaffold/package.go` for `package.json` manipulation and merging
-- Created `internal/scaffold/fs.go` for file and directory copy operations
-- Created `internal/scaffold/scaffold.go` with scaffolding orchestration via `ProjectBuilder`
-- Implemented layer-based composition system that combines base templates + linters + features (BetterAuth)
-
-## Breaking changes
-
-- [ ] Yes
-- [X] No
-
-## Checklist
-
-- [ ] Docs updated
-- [X] CI passing
-- [X] I followed the CONTRIBUTING guidelines
-- [X] I added or updated tests (if applicable)
-
-## Additional context
-
-The command uses the `github.com/albuquerquesz/abacatepay-templates` repository as the source for templates. The layer-based composition architecture allows adding new frameworks, linters, and features without creating a combinatorial explosion of templates.
+The old root Go install path still works and produces `abacatepay-cli`; the documented Go path now installs `abacatepay`.

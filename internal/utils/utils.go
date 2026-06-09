@@ -6,11 +6,11 @@ import (
 	"fmt"
 	"log/slog"
 
-	"abacatepay-cli/internal/auth"
-	"abacatepay-cli/internal/client"
-	"abacatepay-cli/internal/config"
-	"abacatepay-cli/internal/logger"
-	"abacatepay-cli/internal/store"
+	"github.com/AbacatePay/abacatepay-cli/internal/auth"
+	"github.com/AbacatePay/abacatepay-cli/internal/client"
+	"github.com/AbacatePay/abacatepay-cli/internal/config"
+	"github.com/AbacatePay/abacatepay-cli/internal/logger"
+	"github.com/AbacatePay/abacatepay-cli/internal/store"
 
 	"github.com/go-resty/resty/v2"
 )

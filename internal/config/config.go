@@ -19,14 +19,14 @@ func Default() *Config {
 		ServiceName:       "abacatepay-cli",
 		TokenKey:          "auth-token",
 		HTTPTimeout:       15 * time.Second,
-		DefaultForwardURL: "http://localhost:3000/webhooks",
+		DefaultForwardURL: "http://localhost:3000/webhooks/abacatepay",
 		Verbose:           false,
 	}
 }
 
 func Local() *Config {
-	cfg := Default()
-	cfg.APIBaseURL = "http://191.252.202.128:8080"
-	cfg.WebSocketBaseURL = "ws://191.252.202.128:8080/ws"
-	return cfg
+	// Kept for backwards compatibility with the old --local flag. API v2 uses the
+	// same public endpoint for production and dev mode; the API key determines
+	// the environment.
+	return Default()
 }

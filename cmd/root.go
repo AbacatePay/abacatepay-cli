@@ -5,9 +5,9 @@ import (
 	"log/slog"
 	"os"
 
-	"abacatepay-cli/internal/logger"
-	"abacatepay-cli/internal/output"
-	"abacatepay-cli/internal/version"
+	"github.com/AbacatePay/abacatepay-cli/internal/logger"
+	"github.com/AbacatePay/abacatepay-cli/internal/output"
+	"github.com/AbacatePay/abacatepay-cli/internal/version"
 
 	"github.com/spf13/cobra"
 )
@@ -18,6 +18,9 @@ var rootCmd = &cobra.Command{
 	Version:       version.Version,
 	SilenceUsage:  true,
 	SilenceErrors: true,
+	CompletionOptions: cobra.CompletionOptions{
+		DisableDefaultCmd: true,
+	},
 }
 
 var (
@@ -27,7 +30,7 @@ var (
 
 func Exec() {
 	rootCmd.PersistentFlags().BoolVarP(&Verbose, "verbose", "v", false, "Enable verbose logging")
-	rootCmd.PersistentFlags().BoolVarP(&Local, "local", "l", false, "Use test server")
+	rootCmd.PersistentFlags().BoolVarP(&Local, "local", "l", false, "Deprecated: API environment is determined by the API key")
 	rootCmd.PersistentFlags().StringVarP(&OutputFormat, "output", "o", "text", "Output format: text, json, table")
 
 	rootCmd.PersistentPreRunE = func(cmd *cobra.Command, args []string) error {

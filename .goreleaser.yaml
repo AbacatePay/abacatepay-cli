@@ -8,6 +8,7 @@ before:
 
 builds:
   - id: abacatepay
+    main: ./cmd/abacatepay
     binary: abacatepay
     env:
       - CGO_ENABLED=0
@@ -23,6 +24,7 @@ builds:
 
   # Alias (abkt)
   - id: abkt
+    main: ./cmd/abacatepay
     binary: abkt
     env:
       - CGO_ENABLED=0

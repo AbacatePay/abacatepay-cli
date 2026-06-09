@@ -1,125 +1,117 @@
 <h1 align="center">AbacatePay CLI</h1>
 
 <p align="center">
-  CLI oficial do AbacatePay para desenvolvimento local, webhooks e testes rápidos via terminal.
+  CLI oficial da AbacatePay para autenticação, recebimento de webhooks e simulação de pagamentos em modo de desenvolvimento.
 </p>
 
 <p align="center">
   <sub>
     <samp>
       <a href="#instalação">Instalação</a> •
-      <a href="#uso-rápido">Uso</a> •
+      <a href="#uso-rápido">Uso rápido</a> •
       <a href="#autenticação">Autenticação</a> •
-      <a href="#ambientes">Ambientes</a>
+      <a href="#webhooks">Webhooks</a> •
+      <a href="#pagamentos-em-dev-mode">Pagamentos em dev mode</a>
     </samp>
   </sub>
 </p>
 
-<h2 align="center">Instalação</h2>
+## Instalação
 
-<h3 align="center">Go (recomendado)</h3>
+### Go
+
+```bash
+go install github.com/AbacatePay/abacatepay-cli/cmd/abacatepay@latest
+```
+
+Isso instala o binário `abacatepay`.
+
+O comando antigo também funciona, mas instala o binário com o nome do repositório:
 
 ```bash
 go install github.com/AbacatePay/abacatepay-cli@latest
+# binário: abacatepay-cli
 ```
 
-<p align="center">O binário automáticamente será instalado como <em>abacatepay</em> com um aliás <em>abkt</em>.</p>
+### Binários prontos
 
-<h3 align="center">Homebrew (macOS / Linux)</h3>
+Os releases publicam binários para Linux, macOS e Windows nas arquiteturas `amd64` e `arm64`.
+
+## Uso rápido
 
 ```bash
-brew install --build-from-source github.com/AbacatePay/abacatepay-cli
+abacatepay login --key "$ABACATEPAY_API_KEY"
+abacatepay listen --forward-to http://localhost:3000/webhooks/abacatepay
+abacatepay payments simulate <charge-id>
 ```
 
-<h2 align="center">Uso Rápido</h2>
+Use `abacatepay <command> -h` para ver as flags de cada comando.
+
+## Autenticação
+
+A CLI aceita login por chave de API ou pelo fluxo de device login:
 
 ```bash
+# Recomendado para automações e ambientes sem navegador
+abacatepay login --key "$ABACATEPAY_API_KEY"
+
+# Fluxo interativo pelo navegador
 abacatepay login
 ```
 
-<p align="center">Após a autenticação <em>(OAuth Device Flow)</em>, você deve informar a URL do seu servidor local, então a CLI encaminhará todos os webhooks para você.</p>
+A chave fica salva no keyring nativo do sistema operacional. Se nenhum nome for informado com `--name`, a CLI usa o perfil `default`.
 
-<p align="center">Todos os comandos podem ser usados com a seguinte sintaxe:</p>
+A API v2 usa o mesmo endpoint público para produção e desenvolvimento. O ambiente é determinado pela chave utilizada: chaves de dev mode simulam transações; chaves de produção operam em produção.
 
-```bash
-abacatepay <command> [...flags] [...args]
-```
+## Webhooks
 
-<p align="center">Use a flag <code>-h</code> para obter informações detalhadas sobre cada comando.</p>
-
-<h2 align="center">Ambientes</h2>
-
-<p align="center">Atualmente a CLI suporta dois ambientes, o de <em>produção</em> (Padrão) e <em>teste</em>.</p>
-
-<h3 align="center">Produção (Padrão)</h3>
+Receba eventos da AbacatePay e encaminhe para sua aplicação local:
 
 ```bash
-# API: https://api.abacatepay.com
-# WebSocket: wss://ws.abacatepay.com/ws
-
-abacatepay login
+abacatepay listen --forward-to http://localhost:3000/webhooks/abacatepay
 ```
 
-<h3 align="center">Servidor de Teste</h3>
+Flags úteis:
 
-<p align="center">Para usar o modo de desenvolvimento, use a flag <code>-l</code></p>
+| Flag | Descrição | Padrão |
+| ---- | --------- | ------ |
+| `--forward-to` | URL local que receberá os eventos | `http://localhost:3000/webhooks/abacatepay` |
+| `--mock` | Gera webhooks locais sem conectar na API | `false` |
 
+A CLI assina os eventos encaminhados com o header `X-Abacate-Signature`, facilitando testes locais de validação de assinatura.
+
+## Pagamentos em dev mode
+
+Simule o pagamento de uma cobrança transparente criada com uma chave de dev mode:
 
 ```bash
-# API: http://191.252.202.128:8080
-# WebSocket: ws://191.252.202.128:8080/ws
-
-abacatepay login -l
+abacatepay payments simulate <charge-id>
 ```
 
-<h2 align="center">Autenticação</h2>
+Esse comando chama a API v2:
 
-<p align="center">A CLI usa <em>OAuth2 Device Flow</em>, sem necessidade de copiar tokens manualmente, apenas seguindo o fluxo abaixo</p>
+```http
+POST /v2/transparents/simulate-payment?id=<charge-id>
+```
 
-1. Use `abacatepay login`
-2. Abra a URL exibida no navegador
-3. Autorize o acesso na sua conta AbacatePay
-4. A CLI detecta a autorização automaticamente
-5. Informe a URL para encaminhar webhooks (Ou pressione a tecla <em>Enter</em> para usar o padrão)
+Ele só funciona para cobranças em `devMode`. Em produção, o pagamento precisa acontecer pelo fluxo real.
 
-<h3 align="center">Armazenamento</h3>
+## Output
 
-<p align="center">O token da sua conta é armazenado com segurança no <em>keyring nativo</em> do seu sistema operacional:</p>
-
-- **macOS**: Keychain
-- **Linux**: gnome-keyring ou kwallet
-- **Windows**: Credential Manager
-
-<p align="center">Caso o token não consiga ser salvo, você deverá instalar o keyring no seu sistema operacional (Linux)</p>
+A flag global `--output` permite trocar o formato de saída:
 
 ```bash
-# Debian/Ubuntu
-sudo apt install gnome-keyring
-
-# Fedora
-sudo dnf install gnome-keyring
+abacatepay payments simulate <charge-id> --output json
 ```
 
-<h2 align="center">Logs</h2>
+Formatos disponíveis: `text`, `json` e `table`.
 
-<p align="center">Todos os logs são salvos ni caminho <code>~/.abacatepay/logs/</code> com uma rotação automática de 10mb por arquivo, 5 backups e 30 dias de retenção</p>
+## Escopo atual
 
-- **abacatepay.log** - Log geral (JSON)
-- **transactions.log** - Webhooks recebidos e encaminhados
+Para manter a CLI simples e alinhada com a API v2, o escopo atual é:
 
-<h3 align="center">Use jq para analisar os logs</h3>
+- login/logout;
+- receber webhooks;
+- simular pagamento de cobranças transparentes em dev mode.
 
-```bash
-# Erros
-cat ~/.abacatepay/logs/abacatepay.log | jq 'select(.level=="ERROR")'
-
-# Webhooks recebidos
-cat ~/.abacatepay/logs/transactions.log | jq 'select(.msg=="webhook_received")'
-
-# Tempo médio de encaminhamento
-cat ~/.abacatepay/logs/transactions.log | jq 'select(.msg=="webhook_forwarded") | .duration_ms' | jq -s 'add/length'
-```
-
-<h2 align="center">Documentação</h2>
-
-<p align="center">Para uma documentação completa, veja a <a href="https://docs.abacatepay.com/pages/cli">documentação oficial</a>.</p>
+Recursos fora desse escopo foram removidos da codebase até existir paridade clara com a API v2 e documentação atualizada.

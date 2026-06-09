@@ -3,7 +3,8 @@ package cmd
 import "github.com/spf13/cobra"
 
 var paymentsCmd = &cobra.Command{
-	Use: "payments",
+	Use:   "payments",
+	Short: "Payment utilities for AbacatePay dev mode",
 }
 
 func init() {

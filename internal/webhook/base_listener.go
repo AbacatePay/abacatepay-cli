@@ -7,8 +7,8 @@ import (
 	"sync"
 	"time"
 
-	"abacatepay-cli/internal/config"
-	"abacatepay-cli/internal/ws"
+	"github.com/AbacatePay/abacatepay-cli/internal/config"
+	"github.com/AbacatePay/abacatepay-cli/internal/ws"
 
 	"github.com/gorilla/websocket"
 )

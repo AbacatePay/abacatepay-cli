@@ -1,9 +1,9 @@
 package cmd
 
 import (
-	"abacatepay-cli/internal/auth"
-	"abacatepay-cli/internal/output"
-	"abacatepay-cli/internal/utils"
+	"github.com/AbacatePay/abacatepay-cli/internal/auth"
+	"github.com/AbacatePay/abacatepay-cli/internal/output"
+	"github.com/AbacatePay/abacatepay-cli/internal/utils"
 
 	"github.com/spf13/cobra"
 )

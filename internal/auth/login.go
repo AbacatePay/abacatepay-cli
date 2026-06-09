@@ -10,11 +10,11 @@ import (
 
 	"github.com/go-resty/resty/v2"
 
-	"abacatepay-cli/internal/config"
-	"abacatepay-cli/internal/store"
-	"abacatepay-cli/internal/style"
+	"github.com/AbacatePay/abacatepay-cli/internal/config"
+	"github.com/AbacatePay/abacatepay-cli/internal/store"
+	"github.com/AbacatePay/abacatepay-cli/internal/style"
 
-	"abacatepay-cli/internal/types"
+	"github.com/AbacatePay/abacatepay-cli/internal/types"
 )
 
 type LoginParams struct {
@@ -32,11 +32,6 @@ func Login(params *LoginParams) error {
 		return loginWithAPIKey(params)
 	}
 
-	if params.Config.APIBaseURL == "http://191.252.202.128:8080" {
-		params.APIKey = "mock_token_local_dev"
-		return loginWithAPIKey(params)
-	}
-
 	return loginWithDeviceFlow(params)
 }
 
@@ -50,7 +45,7 @@ func loginWithAPIKey(params *LoginParams) error {
 		return err
 	}
 
-	fmt.Printf("Welcome back, %s\nProfile: %s\n", user.Name, params.ProfileName)
+	fmt.Printf("Welcome back, %s\nProfile: %s\n", user.Name, profileName(params.ProfileName))
 
 	return nil
 }
@@ -92,12 +87,16 @@ func loginWithDeviceFlow(params *LoginParams) error {
 		return err
 	}
 
-	fmt.Printf("Authenticated as %s\nProfile: %s\n", user.Name, params.ProfileName)
+	fmt.Printf("Authenticated as %s\nProfile: %s\n", user.Name, profileName(params.ProfileName))
 
 	return nil
 }
 
 func saveAndActivateProfile(st store.TokenStore, profile, token string) error {
+	if profile == "" {
+		profile = "default"
+	}
+
 	existingToken, _ := st.GetNamed(profile)
 	if existingToken != "" {
 		slog.Info("Updating existing profile", "name", profile)
@@ -214,4 +213,11 @@ func pollForToken(ctx context.Context, cfg *config.Config, client *resty.Client,
 	}
 
 	return "", fmt.Errorf("authorization timed out")
+}
+
+func profileName(name string) string {
+	if name == "" {
+		return "default"
+	}
+	return name
 }

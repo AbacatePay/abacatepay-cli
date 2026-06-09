@@ -7,7 +7,7 @@ import (
 	"net/http"
 	"time"
 
-	"abacatepay-cli/internal/style"
+	"github.com/AbacatePay/abacatepay-cli/internal/style"
 
 	"github.com/gorilla/websocket"
 )

@@ -6,7 +6,7 @@ import (
 	"log/slog"
 	"time"
 
-	"abacatepay-cli/internal/config"
+	"github.com/AbacatePay/abacatepay-cli/internal/config"
 
 	"github.com/go-resty/resty/v2"
 )
