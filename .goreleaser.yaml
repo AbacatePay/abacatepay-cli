@@ -20,7 +20,7 @@ builds:
       - amd64
       - arm64
     ldflags:
-      - -s -w -X main.version={{.Version}}
+      - -s -w -X github.com/AbacatePay/abacatepay-cli/internal/version.Version={{.Version}} -X github.com/AbacatePay/abacatepay-cli/internal/version.Commit={{.Commit}}
 
   # Alias (abkt)
   - id: abkt
@@ -36,11 +36,11 @@ builds:
       - amd64
       - arm64
     ldflags:
-      - -s -w -X main.version={{.Version}}
+      - -s -w -X github.com/AbacatePay/abacatepay-cli/internal/version.Version={{.Version}} -X github.com/AbacatePay/abacatepay-cli/internal/version.Commit={{.Commit}}
 
 archives:
   - id: default
-    builds:
+    ids:
       - abacatepay
       - abkt
     formats:
@@ -69,25 +69,24 @@ changelog:
       - '^test:'
       - '^chore:'
 
-# Homebrew
-brews:
+# Homebrew (brew install --cask AbacatePay/tap/abacatepay)
+homebrew_casks:
   - name: abacatepay
+    binaries:
+      - abacatepay
+      - abkt
     repository:
       owner: AbacatePay
       name: homebrew-tap
-    folder: Formula
+      # secrets.GITHUB_TOKEN (this repo's default Actions token) can't push to a
+      # different repo. See .github/workflows/release.yml for where this secret
+      # must be configured.
+      token: "{{ .Env.HOMEBREW_TAP_GITHUB_TOKEN }}"
+    directory: Casks
     homepage: https://abacatepay.com
-    description: AbacatePay’s developer-first CLI for APIs and local workflows 
-    license: MIT
-    install: |
-      bin.install "abacatepay"
-      bin.install "abkt"
+    description: AbacatePay’s developer-first CLI for APIs and local workflows
 
-# Autocomplete
-completions:
-  bash:
-    name: abacatepay
-  zsh:
-    name: _abacatepay
-  fish:
-    name: abacatepay.fish
+# Shell completions aren't wired up: cobra's built-in `completion` subcommand is
+# disabled (CompletionOptions.DisableDefaultCmd in cmd/root.go), and goreleaser's
+# schema has no top-level `completions:` key to pre-bake scripts into archives
+# without it. Re-enable the cobra subcommand first if this is wanted later.
