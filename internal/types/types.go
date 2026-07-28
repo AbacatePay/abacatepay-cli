@@ -14,13 +14,21 @@ type StoreResponse struct {
 	Success any    `json:"success"`
 }
 
-type DeviceLoginResponse struct {
-	DeviceCode      string `json:"deviceCode"`
-	VerificationURI string `json:"verificationUri"`
+type CliAuthRequestResponse struct {
+	Success bool `json:"success"`
+	Data    struct {
+		PublicID string `json:"publicId"`
+	} `json:"data"`
+	Error string `json:"error"`
 }
 
-type TokenResponse struct {
-	Token string `json:"token"`
+type CliAuthStatusResponse struct {
+	Success bool `json:"success"`
+	Data    struct {
+		Status string `json:"status"`
+		Token  string `json:"token"`
+	} `json:"data"`
+	Error string `json:"error"`
 }
 
 type APIError struct {

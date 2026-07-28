@@ -5,7 +5,9 @@ import (
 	"fmt"
 	"log/slog"
 	"net/http"
+	"net/url"
 	"os"
+	"runtime"
 	"time"
 
 	"github.com/go-resty/resty/v2"
@@ -51,29 +53,40 @@ func loginWithAPIKey(params *LoginParams) error {
 }
 
 func loginWithDeviceFlow(params *LoginParams) error {
-	host := getHostname()
+	device := map[string]string{
+		"kind": "cli",
+		"os":   runtime.GOOS,
+		"name": getHostname(),
+		"ip":   "cli",
+	}
 
-	var result types.DeviceLoginResponse
+	var result types.CliAuthRequestResponse
 
 	resp, err := params.Client.R().
 		SetContext(params.Context).
-		SetBody(map[string]string{"host": host}).
+		SetBody(map[string]any{"device": device}).
 		SetResult(&result).
-		Post(params.Config.APIBaseURL + "/device-login")
+		Post(params.Config.APIBaseURL + "/app/oauth/cli/request")
 	if err != nil {
 		return fmt.Errorf("login request failed: %w", err)
 	}
 
-	if resp.StatusCode() != http.StatusOK {
-		return fmt.Errorf("login failed (status %d)", resp.StatusCode())
+	if resp.StatusCode() != http.StatusOK || !result.Success {
+		msg := result.Error
+		if msg == "" {
+			msg = fmt.Sprintf("status %d", resp.StatusCode())
+		}
+		return fmt.Errorf("failed to start login: %s", msg)
 	}
 
-	if !tryOpenBrowser(params, result.VerificationURI) {
+	approvalURL := params.Config.AppBaseURL + "/oauth/cli?id=" + result.Data.PublicID
+
+	if !tryOpenBrowser(params, approvalURL) {
 		fmt.Println("Open the link below to continue authentication:")
-		fmt.Printf("%s\n", result.VerificationURI)
+		fmt.Printf("%s\n", approvalURL)
 	}
 
-	token, err := pollForToken(params.Context, params.Config, params.Client, result.DeviceCode)
+	token, err := pollForToken(params.Context, params.Config, params.Client, result.Data.PublicID)
 	if err != nil {
 		return err
 	}
@@ -165,7 +178,7 @@ func Logout(st store.TokenStore) (string, error) {
 	return activeProfile, nil
 }
 
-func pollForToken(ctx context.Context, cfg *config.Config, client *resty.Client, deviceCode string) (string, error) {
+func pollForToken(ctx context.Context, cfg *config.Config, client *resty.Client, id string) (string, error) {
 	s := style.Spinner()
 	defer s.Stop()
 
@@ -173,42 +186,47 @@ func pollForToken(ctx context.Context, cfg *config.Config, client *resty.Client,
 
 	defer ticker.Stop()
 
-	for range 150 {
+	statusURL := cfg.APIBaseURL + "/app/oauth/cli/" + url.PathEscape(id) + "/status"
+
+	// 300 * 2s = 10 minutes, matching the server-side pending-request TTL.
+	for range 300 {
 		select {
 		case <-ctx.Done():
 			return "", ctx.Err()
 		case <-ticker.C:
 		}
 
-		var result types.TokenResponse
+		var result types.CliAuthStatusResponse
 
 		resp, err := client.R().
 			SetContext(ctx).
-			SetBody(map[string]string{"deviceCode": deviceCode}).
 			SetResult(&result).
-			Post(cfg.APIBaseURL + "/token")
+			Get(statusURL)
 		if err != nil {
-			slog.Debug("Token request failed", "error", err)
+			slog.Debug("Status request failed", "error", err)
 
 			continue
 		}
 
-		switch resp.StatusCode() {
-		case http.StatusOK:
-			if result.Token != "" {
-				return result.Token, nil
-			}
-		case http.StatusAccepted:
-			continue
-		case http.StatusBadRequest:
-			return "", fmt.Errorf("invalid device code")
-		case http.StatusUnauthorized:
-			return "", fmt.Errorf("authorization denied")
-		case http.StatusInternalServerError:
-			slog.Warn("Server error, retrying...")
-			continue
-		default:
+		if resp.StatusCode() == http.StatusNotFound {
+			return "", fmt.Errorf("login request not found (it may have expired)")
+		}
+
+		if resp.StatusCode() != http.StatusOK || !result.Success {
 			slog.Debug("Unexpected response", "status", resp.StatusCode())
+
+			continue
+		}
+
+		switch result.Data.Status {
+		case "APPROVED":
+			if result.Data.Token != "" {
+				return result.Data.Token, nil
+			}
+		case "REJECTED":
+			return "", fmt.Errorf("authorization denied")
+		case "EXPIRED":
+			return "", fmt.Errorf("login request expired, run login again")
 		}
 	}
 

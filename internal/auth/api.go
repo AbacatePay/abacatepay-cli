@@ -16,7 +16,7 @@ func ValidateToken(client *resty.Client, baseURL, token string) (*types.User, er
 	resp, err := client.R().
 		SetAuthToken(token).
 		SetResult(&result).
-		Get(baseURL + "/v2/store/get")
+		Get(baseURL + "/v2/stores/get")
 	if err != nil {
 		return nil, fmt.Errorf("failed to validate API key: %w", err)
 	}
