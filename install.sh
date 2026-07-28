@@ -2,7 +2,7 @@
 # Installs the latest abacatepay CLI release from GitHub Releases.
 #
 # Usage:
-#   curl -fsSL https://raw.githubusercontent.com/AbacatePay/abacatepay-cli/main/install.sh | sh
+#   curl -fsSL https://abacatepay.com/install.sh | sh
 #
 # Env:
 #   ABACATEPAY_INSTALL_DIR   Install directory (default: /usr/local/bin)
