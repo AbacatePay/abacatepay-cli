@@ -26,12 +26,6 @@ curl -fsSL https://raw.githubusercontent.com/AbacatePay/abacatepay-cli/main/inst
 
 Baixa o binário `abacatepay` do último release publicado, valida o checksum e instala em `/usr/local/bin` (use `ABACATEPAY_INSTALL_DIR=<dir>` para instalar em outro lugar).
 
-### Homebrew (macOS e Linux)
-
-```bash
-brew install --cask AbacatePay/tap/abacatepay
-```
-
 ### Go
 
 ```bash

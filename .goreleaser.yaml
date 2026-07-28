@@ -69,22 +69,9 @@ changelog:
       - '^test:'
       - '^chore:'
 
-# Homebrew (brew install --cask AbacatePay/tap/abacatepay)
-homebrew_casks:
-  - name: abacatepay
-    binaries:
-      - abacatepay
-      - abkt
-    repository:
-      owner: AbacatePay
-      name: homebrew-tap
-      # secrets.GITHUB_TOKEN (this repo's default Actions token) can't push to a
-      # different repo. See .github/workflows/release.yml for where this secret
-      # must be configured.
-      token: "{{ .Env.HOMEBREW_TAP_GITHUB_TOKEN }}"
-    directory: Casks
-    homepage: https://abacatepay.com
-    description: AbacatePay’s developer-first CLI for APIs and local workflows
+# No Homebrew tap: install.sh (curl-to-shell, pulls straight from GitHub
+# Releases) already covers "global install of the latest build" without
+# needing a separate homebrew-tap repo or a cross-repo PAT to maintain.
 
 # Shell completions aren't wired up: cobra's built-in `completion` subcommand is
 # disabled (CompletionOptions.DisableDefaultCmd in cmd/root.go), and goreleaser's

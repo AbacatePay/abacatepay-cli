@@ -30,9 +30,3 @@ jobs:
           args: release --clean
         env:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
-          # secrets.GITHUB_TOKEN is scoped to this repo only and cannot push the
-          # generated Cask to AbacatePay/homebrew-tap. HOMEBREW_TAP_GITHUB_TOKEN
-          # must be a PAT (or GitHub App token) with contents:write on that repo,
-          # stored as a repo secret here. The homebrew_casks block in
-          # .goreleaser.yaml picks it up via this env var name automatically.
-          HOMEBREW_TAP_GITHUB_TOKEN: ${{ secrets.HOMEBREW_TAP_GITHUB_TOKEN }}
