@@ -1,59 +1,59 @@
 package types
 
-type Customer struct {
-	Name      string `json:"name,omitempty"`
-	Cellphone string `json:"cellphone,omitempty"`
-	Email     string `json:"email,omitempty"`
-	TaxID     string `json:"taxId,omitempty"`
-}
-
-type CreateCheckoutRequest struct {
-	Items         []Item    `json:"items"`
-	Method        string    `json:"method,omitempty"` // PIX | CARD (default: PIX)
-	ReturnURL     string    `json:"returnUrl,omitempty"`
-	CompletionURL string    `json:"completionUrl,omitempty"`
-	CustomerID    string    `json:"customerId,omitempty"`
-	Customer      *Customer `json:"customer,omitempty"`
-	Coupons       []string  `json:"coupons,omitempty"`
-	ExternalID    string    `json:"externalId,omitempty"`
-}
-
-type Item struct {
-	ID       string `json:"id"`
-	Quantity int    `json:"quantity"`
-}
-
-type CheckoutResponse struct {
-	Data struct {
-		ID     string `json:"id"`
-		URL    string `json:"url"`
-		Status string `json:"status"`
-		Amount int    `json:"amount"`
-	} `json:"data"`
-}
-
-type PixResponse struct {
-	Data struct {
-		ID     string `json:"id"`
-		BRCode string `json:"brCode"`
-		Status string `json:"status"`
-	} `json:"data"`
-}
-
 type User struct {
 	Name  string
 	Email string
 }
 
-type DeviceLoginResponse struct {
-	DeviceCode      string `json:"deviceCode"`
-	VerificationURI string `json:"verificationUri"`
+type StoreResponse struct {
+	Data struct {
+		ID   string `json:"id"`
+		Name string `json:"name"`
+	} `json:"data"`
+	Error   string `json:"error"`
+	Success any    `json:"success"`
 }
 
-type TokenResponse struct {
-	Token string `json:"token"`
+type CliAuthRequestResponse struct {
+	Success bool `json:"success"`
+	Data    struct {
+		PublicID string `json:"publicId"`
+	} `json:"data"`
+	Error string `json:"error"`
+}
+
+type CliAuthStatusResponse struct {
+	Success bool `json:"success"`
+	Data    struct {
+		Status string `json:"status"`
+		Token  string `json:"token"`
+	} `json:"data"`
+	Error string `json:"error"`
 }
 
 type APIError struct {
 	Message string `json:"error"`
+}
+
+type SimulatePaymentRequest struct {
+	Metadata map[string]any `json:"metadata"`
+}
+
+type TransparentPaymentResponse struct {
+	Data struct {
+		ID           string         `json:"id"`
+		Amount       int            `json:"amount"`
+		Status       string         `json:"status"`
+		DevMode      bool           `json:"devMode"`
+		BRCode       string         `json:"brCode"`
+		BRCodeBase64 string         `json:"brCodeBase64"`
+		PlatformFee  int            `json:"platformFee"`
+		ReceiptURL   string         `json:"receiptUrl"`
+		CreatedAt    string         `json:"createdAt"`
+		UpdatedAt    string         `json:"updatedAt"`
+		ExpiresAt    string         `json:"expiresAt"`
+		Metadata     map[string]any `json:"metadata"`
+	} `json:"data"`
+	Error   string `json:"error"`
+	Success any    `json:"success"`
 }

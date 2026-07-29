@@ -4,7 +4,7 @@ import (
 	"fmt"
 	"sync"
 
-	"abacatepay-cli/internal/style"
+	"github.com/AbacatePay/abacatepay-cli/internal/style"
 )
 
 type Format string

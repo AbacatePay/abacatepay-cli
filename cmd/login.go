@@ -7,8 +7,8 @@ import (
 	"os/signal"
 	"syscall"
 
-	"abacatepay-cli/internal/auth"
-	"abacatepay-cli/internal/utils"
+	"github.com/AbacatePay/abacatepay-cli/internal/auth"
+	"github.com/AbacatePay/abacatepay-cli/internal/utils"
 
 	"github.com/spf13/cobra"
 )

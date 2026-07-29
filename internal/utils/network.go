@@ -8,7 +8,7 @@ import (
 	"runtime"
 	"time"
 
-	"abacatepay-cli/internal/style"
+	"github.com/AbacatePay/abacatepay-cli/internal/style"
 )
 
 const DefaultForwardURL = "http://localhost:3000/webhooks/abacatepay"

@@ -9,9 +9,9 @@ import (
 	"net/http"
 	"time"
 
-	"abacatepay-cli/internal/crypto"
-	"abacatepay-cli/internal/style"
-	"abacatepay-cli/internal/ws"
+	"github.com/AbacatePay/abacatepay-cli/internal/crypto"
+	"github.com/AbacatePay/abacatepay-cli/internal/style"
+	"github.com/AbacatePay/abacatepay-cli/internal/ws"
 
 	"github.com/gorilla/websocket"
 	"golang.org/x/sync/errgroup"

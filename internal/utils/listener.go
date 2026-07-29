@@ -7,7 +7,7 @@ import (
 	"log/slog"
 	"os"
 
-	"abacatepay-cli/internal/webhook"
+	"github.com/AbacatePay/abacatepay-cli/internal/webhook"
 )
 
 func StartListener(params *StartListenerParams) error {

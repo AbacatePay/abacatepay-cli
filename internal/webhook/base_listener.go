@@ -3,12 +3,12 @@ package webhook
 import (
 	"context"
 	"log/slog"
-	"net/http"
+	"net/url"
 	"sync"
 	"time"
 
-	"abacatepay-cli/internal/config"
-	"abacatepay-cli/internal/ws"
+	"github.com/AbacatePay/abacatepay-cli/internal/config"
+	"github.com/AbacatePay/abacatepay-cli/internal/ws"
 
 	"github.com/gorilla/websocket"
 )
@@ -57,12 +57,21 @@ func (b *BaseListener) Heartbeat(ctx context.Context, conn *websocket.Conn) erro
 }
 
 func (b *BaseListener) WSConfig() ws.Config {
-	header := http.Header{}
-	header.Add("Authorization", "Bearer "+b.Token)
+	// services/ws-relay authenticates the connection via a ?session= query
+	// param on the upgrade request, not an Authorization header.
+	dialURL := b.Cfg.WebSocketBaseURL
+
+	if u, err := url.Parse(b.Cfg.WebSocketBaseURL); err == nil {
+		q := u.Query()
+		q.Set("session", b.Token)
+		u.RawQuery = q.Encode()
+		dialURL = u.String()
+	} else {
+		slog.Debug("Failed to parse websocket base URL", "error", err)
+	}
 
 	return ws.Config{
-		URL:        b.Cfg.WebSocketBaseURL,
-		Headers:    header,
+		URL:        dialURL,
 		MinBackoff: 1 * time.Second,
 		MaxBackoff: 15 * time.Second,
 		MaxRetries: 5,

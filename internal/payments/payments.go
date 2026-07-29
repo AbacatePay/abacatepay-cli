@@ -5,9 +5,9 @@ import (
 	"fmt"
 	"net/http"
 
-	"abacatepay-cli/internal/output"
-	"abacatepay-cli/internal/style"
-	"abacatepay-cli/internal/types"
+	"github.com/AbacatePay/abacatepay-cli/internal/output"
+	"github.com/AbacatePay/abacatepay-cli/internal/style"
+	"github.com/AbacatePay/abacatepay-cli/internal/types"
 
 	"github.com/go-resty/resty/v2"
 )
