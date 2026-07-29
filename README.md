@@ -18,6 +18,14 @@
 
 ## Instalação
 
+### Script de instalação (Linux e macOS)
+
+```bash
+curl -fsSL https://abacatepay.com/install.sh | sh
+```
+
+Baixa o binário `abacatepay` do último release publicado, valida o checksum e instala em `/usr/local/bin` (use `ABACATEPAY_INSTALL_DIR=<dir>` para instalar em outro lugar).
+
 ### Go
 
 ```bash
@@ -35,7 +43,7 @@ go install github.com/AbacatePay/abacatepay-cli@latest
 
 ### Binários prontos
 
-Os releases publicam binários para Linux, macOS e Windows nas arquiteturas `amd64` e `arm64`.
+Os releases publicam binários para Linux, macOS e Windows nas arquiteturas `amd64` e `arm64` em [Releases](https://github.com/AbacatePay/abacatepay-cli/releases).
 
 ## Uso rápido
 

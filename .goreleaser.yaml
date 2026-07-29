@@ -20,7 +20,7 @@ builds:
       - amd64
       - arm64
     ldflags:
-      - -s -w -X main.version={{.Version}}
+      - -s -w -X github.com/AbacatePay/abacatepay-cli/internal/version.Version={{.Version}} -X github.com/AbacatePay/abacatepay-cli/internal/version.Commit={{.Commit}}
 
   # Alias (abkt)
   - id: abkt
@@ -36,11 +36,11 @@ builds:
       - amd64
       - arm64
     ldflags:
-      - -s -w -X main.version={{.Version}}
+      - -s -w -X github.com/AbacatePay/abacatepay-cli/internal/version.Version={{.Version}} -X github.com/AbacatePay/abacatepay-cli/internal/version.Commit={{.Commit}}
 
 archives:
   - id: default
-    builds:
+    ids:
       - abacatepay
       - abkt
     formats:
@@ -69,25 +69,11 @@ changelog:
       - '^test:'
       - '^chore:'
 
-# Homebrew
-brews:
-  - name: abacatepay
-    repository:
-      owner: AbacatePay
-      name: homebrew-tap
-    folder: Formula
-    homepage: https://abacatepay.com
-    description: AbacatePay’s developer-first CLI for APIs and local workflows 
-    license: MIT
-    install: |
-      bin.install "abacatepay"
-      bin.install "abkt"
+# No Homebrew tap: install.sh (curl-to-shell, pulls straight from GitHub
+# Releases) already covers "global install of the latest build" without
+# needing a separate homebrew-tap repo or a cross-repo PAT to maintain.
 
-# Autocomplete
-completions:
-  bash:
-    name: abacatepay
-  zsh:
-    name: _abacatepay
-  fish:
-    name: abacatepay.fish
+# Shell completions aren't wired up: cobra's built-in `completion` subcommand is
+# disabled (CompletionOptions.DisableDefaultCmd in cmd/root.go), and goreleaser's
+# schema has no top-level `completions:` key to pre-bake scripts into archives
+# without it. Re-enable the cobra subcommand first if this is wanted later.

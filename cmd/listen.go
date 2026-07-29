@@ -51,7 +51,7 @@ func listen(cmd *cobra.Command) error {
 		Client:     deps.Client,
 		ForwardURL: url,
 		Store:      deps.Store,
-		Token:      deps.Config.TokenKey,
+		Token:      deps.Token,
 		Version:    cmd.Root().Version,
 		Mock:       listenMock,
 	}
