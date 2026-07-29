@@ -30,6 +30,7 @@ type Dependencies struct {
 	Config *config.Config
 	Client *resty.Client
 	Store  store.TokenStore
+	Token  string
 }
 
 func SetupTransactionLogger() (*slog.Logger, error) {
@@ -89,5 +90,6 @@ func SetupClient(local, verbose bool) (*Dependencies, error) {
 	}
 
 	deps.Client.SetAuthToken(token)
+	deps.Token = token
 	return deps, nil
 }
