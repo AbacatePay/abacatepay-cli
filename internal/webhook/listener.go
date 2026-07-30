@@ -17,47 +17,10 @@ import (
 	"golang.org/x/sync/errgroup"
 )
 
-func (l *Listener) Listen(ctx context.Context, mock bool) error {
-	if mock {
-		style.LogSigningSecret(l.signingSecret)
-		return l.mockListen(ctx)
-	}
-
+func (l *Listener) Listen(ctx context.Context) error {
 	slog.Info("Starting webhook listener...")
 
 	return ws.ConnectWithRetry(ctx, l.WSConfig(), l.readLoop)
-}
-
-func (l *Listener) mockListen(ctx context.Context) error {
-	ticker := time.NewTicker(5 * time.Second)
-	defer ticker.Stop()
-
-	for {
-		select {
-		case <-ctx.Done():
-			return nil
-		case <-ticker.C:
-			id := fmt.Sprintf("pix_char_%d", time.Now().Unix())
-			event := "billing.paid"
-
-			mockData := map[string]any{
-				"event": event,
-				"data": map[string]any{
-					"id":         id,
-					"externalId": "order_123",
-					"amount":     1000,
-					"status":     "PAID",
-				},
-			}
-
-			message, _ := json.Marshal(mockData)
-			l.displayWebhook(webhookMetadata{Event: event, ID: id}, message)
-
-			go func() {
-				_ = l.forward(ctx, message, event)
-			}()
-		}
-	}
 }
 
 func (l *Listener) readLoop(ctx context.Context, conn *websocket.Conn) error {
@@ -146,14 +109,13 @@ func (l *Listener) displayWebhook(meta webhookMetadata, rawBody []byte) {
 
 func (l *Listener) forward(ctx context.Context, message []byte, event string) error {
 	startTime := time.Now()
-	timestamp := time.Now().Unix()
 
-	signature := crypto.SignWebhookPayload(l.signingSecret, timestamp, message)
+	signature := crypto.SignWebhookPayload(message)
 
 	resp, err := l.client.R().
 		SetContext(ctx).
 		SetHeader("Content-Type", "application/json").
-		SetHeader("X-Abacate-Signature", fmt.Sprintf("t=%d,v1=%s", timestamp, signature)).
+		SetHeader("X-Webhook-Signature", signature).
 		SetBody(message).
 		Post(l.forwardURL)
 

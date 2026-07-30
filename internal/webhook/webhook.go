@@ -1,10 +1,8 @@
 package webhook
 
 import (
-	"encoding/hex"
 	"encoding/json"
 	"log/slog"
-	"time"
 
 	"github.com/AbacatePay/abacatepay-cli/internal/config"
 
@@ -23,10 +21,9 @@ type webhookMetadata struct {
 
 type Listener struct {
 	BaseListener
-	client        *resty.Client
-	forwardURL    string
-	txLogger      *slog.Logger
-	signingSecret string
+	client     *resty.Client
+	forwardURL string
+	txLogger   *slog.Logger
 }
 
 func NewListener(cfg *config.Config, client *resty.Client, forwardURL, token string, txLogger *slog.Logger) *Listener {
@@ -35,9 +32,8 @@ func NewListener(cfg *config.Config, client *resty.Client, forwardURL, token str
 			Cfg:   cfg,
 			Token: token,
 		},
-		client:        client,
-		forwardURL:    forwardURL,
-		txLogger:      txLogger,
-		signingSecret: "whsec_mock_" + hex.EncodeToString([]byte(time.Now().Format("150405"))),
+		client:     client,
+		forwardURL: forwardURL,
+		txLogger:   txLogger,
 	}
 }

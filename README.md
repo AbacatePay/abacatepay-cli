@@ -48,7 +48,7 @@ Os releases publicam binários para Linux, macOS e Windows nas arquiteturas `amd
 ## Uso rápido
 
 ```bash
-abacatepay login --key "$ABACATEPAY_API_KEY"
+abacatepay login
 abacatepay listen --forward-to http://localhost:3000/webhooks/abacatepay
 abacatepay payments simulate <charge-id>
 ```
@@ -57,19 +57,13 @@ Use `abacatepay <command> -h` para ver as flags de cada comando.
 
 ## Autenticação
 
-A CLI aceita login por chave de API ou pelo fluxo de device login:
-
 ```bash
-# Recomendado para automações e ambientes sem navegador
-abacatepay login --key "$ABACATEPAY_API_KEY"
-
-# Fluxo interativo pelo navegador
 abacatepay login
 ```
 
-A chave fica salva no keyring nativo do sistema operacional. Se nenhum nome for informado com `--name`, a CLI usa o perfil `default`.
+Abre um link no navegador para você aprovar o acesso da CLI na sua conta. O token da sessão fica salvo no keyring nativo do sistema operacional. Se nenhum nome for informado com `--name`, a CLI usa o perfil `default`.
 
-A API v2 usa o mesmo endpoint público para produção e desenvolvimento. O ambiente é determinado pela chave utilizada: chaves de dev mode simulam transações; chaves de produção operam em produção.
+Para sair: `abacatepay logout`.
 
 ## Webhooks
 
@@ -79,14 +73,9 @@ Receba eventos da AbacatePay e encaminhe para sua aplicação local:
 abacatepay listen --forward-to http://localhost:3000/webhooks/abacatepay
 ```
 
-Flags úteis:
+`--forward-to` define a URL local que receberá os eventos (padrão: `http://localhost:3000/webhooks/abacatepay`).
 
-| Flag | Descrição | Padrão |
-| ---- | --------- | ------ |
-| `--forward-to` | URL local que receberá os eventos | `http://localhost:3000/webhooks/abacatepay` |
-| `--mock` | Gera webhooks locais sem conectar na API | `false` |
-
-A CLI assina os eventos encaminhados com o header `X-Abacate-Signature`, facilitando testes locais de validação de assinatura.
+A CLI só recebe eventos de contas/cobranças em `devMode` — produção nunca chega no relay. A CLI assina os eventos encaminhados com o header `X-Webhook-Signature`, usando a mesma chave pública HMAC documentada em [Segurança de Webhooks](https://docs.abacatepay.com/pages/webhooks/security#2-assinatura-hmac). Essa chave é fixa — a verificação que você já implementou seguindo a documentação funciona sem alteração.
 
 ## Pagamentos em dev mode
 

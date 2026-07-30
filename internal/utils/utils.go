@@ -23,7 +23,6 @@ type StartListenerParams struct {
 	Token      string
 	ForwardURL string
 	Version    string
-	Mock       bool
 }
 
 type Dependencies struct {
