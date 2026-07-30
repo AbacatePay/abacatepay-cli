@@ -19,14 +19,11 @@ func StartListener(params *StartListenerParams) error {
 	listener := webhook.NewListener(params.Config, params.Client, params.ForwardURL, params.Token, txLogger)
 
 	fmt.Fprintln(os.Stderr)
-	if params.Mock {
-		slog.Info("Running in MOCK mode", "interval", "5s")
-	}
 	slog.Info("Listening for webhooks", "forward_to", params.ForwardURL)
 	fmt.Fprintln(os.Stderr, "Press Ctrl+C to stop")
 	fmt.Fprintln(os.Stderr)
 
-	err = listener.Listen(params.Context, params.Mock)
+	err = listener.Listen(params.Context)
 
 	fmt.Fprintln(os.Stderr)
 	slog.Info("Listener stopped")

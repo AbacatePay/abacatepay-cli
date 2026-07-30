@@ -19,14 +19,10 @@ var listenCmd = &cobra.Command{
 	},
 }
 
-var (
-	forwardURL string
-	listenMock bool
-)
+var forwardURL string
 
 func init() {
 	listenCmd.Flags().StringVar(&forwardURL, "forward-to", "", "Where incoming events should be sent")
-	listenCmd.Flags().BoolVar(&listenMock, "mock", false, "Simulate incoming webhooks without connecting to the API")
 
 	rootCmd.AddCommand(listenCmd)
 }
@@ -53,7 +49,6 @@ func listen(cmd *cobra.Command) error {
 		Store:      deps.Store,
 		Token:      deps.Token,
 		Version:    cmd.Root().Version,
-		Mock:       listenMock,
 	}
 
 	return utils.StartListener(params)
