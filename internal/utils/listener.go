@@ -16,7 +16,7 @@ func StartListener(params *StartListenerParams) error {
 		return fmt.Errorf("failed to initialize transaction logger: %w", err)
 	}
 
-	listener := webhook.NewListener(params.Config, params.Client, params.ForwardURL, params.Token, txLogger)
+	listener := webhook.NewListener(params.Config, params.Client, params.ForwardURL, params.Token, params.Env, txLogger)
 
 	fmt.Fprintln(os.Stderr)
 	slog.Info("Listening for webhooks", "forward_to", params.ForwardURL)
