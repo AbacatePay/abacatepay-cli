@@ -9,7 +9,7 @@ import (
 // CheckUpdate verifica se há uma versão mais nova da CLI no GitHub
 func CheckUpdate(ctx context.Context, currentVersion string) (*selfupdate.Release, bool, error) {
 	slug := "AbacatePay/abacatepay-cli"
-	
+
 	latest, found, err := selfupdate.DetectLatest(ctx, selfupdate.ParseSlug(slug))
 	if err != nil {
 		return nil, false, err
