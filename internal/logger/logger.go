@@ -6,9 +6,65 @@ import (
 	"log/slog"
 	"os"
 	"path/filepath"
+	"sync/atomic"
 
 	"gopkg.in/natefinch/lumberjack.v2"
 )
+
+var consoleEnabled atomic.Bool
+
+func init() {
+	consoleEnabled.Store(true)
+}
+
+// ConsoleLevel derives the console handler's threshold from the configured
+// file-log level. Every operational log call in this codebase (Info/Debug/
+// Warn - there is no slog.Error call site; user-facing failures always go
+// through output.Error/style.PrintError instead) is internal diagnostic
+// detail, already reflected where it matters through the CLI's styled
+// success/error/event output. Echoing it again as raw `level=INFO
+// msg=...` text on stderr is redundant and visually inconsistent with that
+// styling, so by default none of it reaches the console - only the file
+// handler. Console only mirrors the file level once verbose mode (Debug) is
+// on, when raw diagnostic detail is exactly what was asked for.
+func ConsoleLevel(base slog.Level) slog.Level {
+	if base <= slog.LevelDebug {
+		return base
+	}
+	return slog.LevelError + 1
+}
+
+// SetConsoleEnabled toggles whether the console (stderr) log handler emits
+// output. Callers that take over the terminal (e.g. a bubbletea alt-screen
+// program) should disable it for the duration to avoid corrupting the
+// display, then restore it afterwards. Log records still reach the file
+// handler regardless of this setting.
+func SetConsoleEnabled(enabled bool) {
+	consoleEnabled.Store(enabled)
+}
+
+type toggleHandler struct {
+	inner slog.Handler
+}
+
+func (h *toggleHandler) Enabled(ctx context.Context, level slog.Level) bool {
+	return consoleEnabled.Load() && h.inner.Enabled(ctx, level)
+}
+
+func (h *toggleHandler) Handle(ctx context.Context, r slog.Record) error {
+	if !consoleEnabled.Load() {
+		return nil
+	}
+	return h.inner.Handle(ctx, r)
+}
+
+func (h *toggleHandler) WithAttrs(attrs []slog.Attr) slog.Handler {
+	return &toggleHandler{inner: h.inner.WithAttrs(attrs)}
+}
+
+func (h *toggleHandler) WithGroup(name string) slog.Handler {
+	return &toggleHandler{inner: h.inner.WithGroup(name)}
+}
 
 type Config struct {
 	LogDir     string
@@ -50,15 +106,15 @@ func Setup(cfg *Config) (*slog.Logger, error) {
 
 	fileHandler := slog.NewJSONHandler(logFile, &slog.HandlerOptions{Level: cfg.Level})
 
-	consoleHandler := slog.NewTextHandler(os.Stderr, &slog.HandlerOptions{
-		Level: cfg.Level,
+	consoleHandler := &toggleHandler{inner: slog.NewTextHandler(os.Stderr, &slog.HandlerOptions{
+		Level: ConsoleLevel(cfg.Level),
 		ReplaceAttr: func(groups []string, a slog.Attr) slog.Attr {
 			if a.Key == slog.TimeKey && len(groups) == 0 {
 				return slog.Attr{}
 			}
 			return a
 		},
-	})
+	})}
 
 	multiHandler := NewFanoutHandler(consoleHandler, fileHandler)
 

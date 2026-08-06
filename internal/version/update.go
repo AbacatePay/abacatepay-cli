@@ -6,7 +6,7 @@ import (
 	"github.com/creativeprojects/go-selfupdate"
 )
 
-// CheckUpdate verifica se há uma versão mais nova da CLI no GitHub
+// CheckUpdate checks whether a newer CLI version is available on GitHub.
 func CheckUpdate(ctx context.Context, currentVersion string) (*selfupdate.Release, bool, error) {
 	slug := "AbacatePay/abacatepay-cli"
 

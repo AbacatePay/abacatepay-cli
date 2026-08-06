@@ -24,17 +24,17 @@ func init() {
 func logout() error {
 	deps := utils.SetupDependencies(Local, Verbose)
 
-	profile, err := auth.Logout(deps.Store)
-	if err != nil {
-		return err
-	}
+	return output.RunTask("Signing out...", func() (output.Result, error) {
+		profile, err := auth.Logout(deps.Store)
+		if err != nil {
+			return output.Result{}, err
+		}
 
-	output.Print(output.Result{
-		Title: "Signed out successfully",
-		Fields: map[string]string{
-			"Profile": profile,
-		},
+		return output.Result{
+			Title: "Signed out successfully",
+			Fields: map[string]string{
+				"Profile": profile,
+			},
+		}, nil
 	})
-
-	return nil
 }

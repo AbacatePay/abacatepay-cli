@@ -5,6 +5,7 @@ import (
 	"log/slog"
 	"os"
 
+	"github.com/AbacatePay/abacatepay-cli/internal/clierr"
 	"github.com/AbacatePay/abacatepay-cli/internal/logger"
 	"github.com/AbacatePay/abacatepay-cli/internal/output"
 	"github.com/AbacatePay/abacatepay-cli/internal/version"
@@ -47,21 +48,23 @@ func Exec() {
 
 		cfg, err := logger.DefaultConfig()
 		if err != nil {
-			h := slog.NewTextHandler(os.Stderr, &slog.HandlerOptions{Level: level})
+			h := slog.NewTextHandler(os.Stderr, &slog.HandlerOptions{Level: logger.ConsoleLevel(level)})
 			slog.SetDefault(slog.New(h))
 			return nil
 		}
 
 		cfg.Level = level
 		if _, err := logger.Setup(cfg); err != nil {
-			h := slog.NewTextHandler(os.Stderr, &slog.HandlerOptions{Level: level})
+			h := slog.NewTextHandler(os.Stderr, &slog.HandlerOptions{Level: logger.ConsoleLevel(level)})
 			slog.SetDefault(slog.New(h))
 		}
 		return nil
 	}
 
 	if err := rootCmd.Execute(); err != nil {
-		output.Error(err.Error())
+		if !clierr.AlreadyDisplayed(err) {
+			output.Error(err.Error())
+		}
 		os.Exit(1)
 	}
 }

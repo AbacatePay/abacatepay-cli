@@ -6,17 +6,18 @@ import (
 
 	rootcmd "github.com/AbacatePay/abacatepay-cli/cmd"
 	"github.com/AbacatePay/abacatepay-cli/internal/logger"
+	"github.com/AbacatePay/abacatepay-cli/internal/style"
 )
 
 func main() {
 	logCfg, err := logger.DefaultConfig()
 	if err != nil {
-		fmt.Fprintf(os.Stderr, "Failed to configure logger: %v\n", err)
+		style.PrintError(fmt.Sprintf("Failed to configure logger: %v", err))
 		os.Exit(1)
 	}
 
 	if _, err := logger.Setup(logCfg); err != nil {
-		fmt.Fprintf(os.Stderr, "Failed to initialize logger: %v\n", err)
+		style.PrintError(fmt.Sprintf("Failed to initialize logger: %v", err))
 		os.Exit(1)
 	}
 

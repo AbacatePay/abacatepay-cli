@@ -4,7 +4,9 @@ import (
 	"fmt"
 	"sync"
 
+	"github.com/AbacatePay/abacatepay-cli/internal/clierr"
 	"github.com/AbacatePay/abacatepay-cli/internal/style"
+	"github.com/AbacatePay/abacatepay-cli/internal/tui"
 )
 
 type Format string
@@ -72,6 +74,37 @@ func Print(r Result) {
 	default:
 		printText(r)
 	}
+}
+
+// RunTask runs fn and displays its outcome according to the current output
+// format. In JSON/table mode it runs fn immediately and prints the result
+// (or error) through Print/Error, same as any other command. In text mode
+// it shows an animated spinner (via tui.RunTask) while fn runs, and the
+// spinner's final frame becomes the result box - one continuous render, not
+// a spinner followed by a separately-printed box.
+//
+// Either way, RunTask itself displays a non-nil error before returning it,
+// so the returned error is wrapped with clierr.MarkDisplayed - callers
+// (ultimately cmd.Exec's top-level handler) must check clierr.AlreadyDisplayed
+// before printing it again.
+//
+// fn must not print to stdout itself; see tui.RunTask.
+func RunTask(message string, fn func() (Result, error)) error {
+	if GetFormat() != FormatText {
+		r, err := fn()
+		if err != nil {
+			Error(err.Error())
+			return clierr.MarkDisplayed(err)
+		}
+		Print(r)
+		return nil
+	}
+
+	err := tui.RunTask(message, func() (tui.TaskResult, error) {
+		r, err := fn()
+		return tui.TaskResult{Title: r.Title, Fields: r.Fields}, err
+	})
+	return clierr.MarkDisplayed(err)
 }
 
 func Error(msg string) {
