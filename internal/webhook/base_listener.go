@@ -17,6 +17,14 @@ type BaseListener struct {
 	Cfg    *config.Config
 	Token  string
 	ConnMu sync.Mutex
+
+	// Emit, if set, receives every Event instead of the default plain-line
+	// output. Left nil, listeners behave exactly as before.
+	Emit func(Event)
+
+	// OnStatus, if set, receives connection lifecycle transitions (dialing,
+	// connected, retrying). Left nil, no-op.
+	OnStatus func(ws.Status)
 }
 
 func (b *BaseListener) SetupConn(conn *websocket.Conn) {
@@ -75,6 +83,7 @@ func (b *BaseListener) WSConfig() ws.Config {
 		MinBackoff: 1 * time.Second,
 		MaxBackoff: 15 * time.Second,
 		MaxRetries: 5,
+		OnStatus:   b.OnStatus,
 	}
 }
 

@@ -3,12 +3,13 @@ package style
 import (
 	"encoding/json"
 	"fmt"
+	"io"
 	"log/slog"
+	"os"
 	"sort"
 	"strings"
 	"time"
 
-	"github.com/briandowns/spinner"
 	"github.com/charmbracelet/huh"
 	"github.com/charmbracelet/lipgloss"
 	"github.com/charmbracelet/lipgloss/table"
@@ -56,23 +57,7 @@ var (
 	ErrorStyle = lipgloss.NewStyle().
 			Foreground(Palette.SoftRed).
 			Bold(true)
-
-	BoxStyle = lipgloss.NewStyle().
-			BorderStyle(lipgloss.RoundedBorder()).
-			BorderForeground(Palette.Green).
-			Padding(1, 2).
-			MarginTop(1).
-			MarginBottom(1)
 )
-
-func Spinner() *spinner.Spinner {
-	s := spinner.New(spinner.CharSets[14], 100*time.Millisecond)
-	s.Suffix = " Waiting for authorization..."
-
-	s.Start()
-
-	return s
-}
 
 func AbacateTheme() *huh.Theme {
 	t := huh.ThemeBase()
@@ -153,22 +138,45 @@ func SimpleList(items []string, activeItem string) {
 	fmt.Println("")
 }
 
-func PrintSuccess(title string, fields map[string]string) {
+// RenderSuccess returns the success rendering used by PrintSuccess: a title
+// line followed by "label: value" lines, no border/box. Shared with the
+// interactive tui.RunTask so a spinner-then-result flow ends in the exact
+// same text, drawn by the same code, instead of two disconnected passes.
+func RenderSuccess(title string, fields map[string]string) string {
 	var sb strings.Builder
-	sb.WriteString(TitleStyle.Render("🥑 "+title) + "\n\n")
+	sb.WriteString(TitleStyle.Render("🥑 " + title))
 	for label, value := range fields {
-		fmt.Fprintf(&sb, "%s %s\n", LabelStyle.Render(label+":"), ValueStyle.Render(value))
+		fmt.Fprintf(&sb, "\n%s %s", LabelStyle.Render(label+":"), ValueStyle.Render(value))
 	}
-	fmt.Println(BoxStyle.Render(sb.String()))
+	return sb.String()
+}
+
+func PrintSuccess(title string, fields map[string]string) {
+	fmt.Println(RenderSuccess(title, fields))
+}
+
+// PrintInfo prints a de-emphasized transient status line - e.g. instructions
+// shown before a spinner starts. Keeps output consistently styled instead of
+// falling back to a bare fmt.Println.
+func PrintInfo(msg string) {
+	FprintInfo(os.Stdout, msg)
+}
+
+// FprintInfo is PrintInfo for an arbitrary writer, for callers (like the
+// non-interactive `listen` banner) that intentionally keep status text on
+// stderr so piped stdout data stays clean.
+func FprintInfo(w io.Writer, msg string) {
+	fmt.Fprintln(w, LabelStyle.Render(msg))
+}
+
+// RenderError returns the error rendering used by PrintError, no border/box.
+// See RenderSuccess.
+func RenderError(err string) string {
+	return ErrorStyle.Render("⚠️  Error:") + " " + lipgloss.NewStyle().Foreground(Palette.White).Render(err)
 }
 
 func PrintError(err string) {
-	fmt.Println(BoxStyle.
-		BorderForeground(Palette.SoftRed).
-		Padding(0, 1).
-		Render(
-			ErrorStyle.Render("⚠️  Error") + "\n\n" + lipgloss.NewStyle().Foreground(Palette.White).Render(err),
-		))
+	fmt.Println(RenderError(err))
 }
 
 func PrintVerifyError(expected, received string) {
@@ -184,12 +192,15 @@ func PrintVerifyError(expected, received string) {
 	sb.WriteString(lipgloss.NewStyle().Foreground(Palette.White).Render("2. Wrong secret key used.") + "\n")
 	sb.WriteString(lipgloss.NewStyle().Foreground(Palette.White).Render("3. Timestamp manipulation."))
 
-	fmt.Println(BoxStyle.BorderForeground(Palette.SoftRed).Render(sb.String()))
+	fmt.Println(sb.String())
 }
 
-func LogWebhookReceived(event, id string) {
+// RenderWebhookReceived renders a single received-webhook line. It's the
+// single source of truth for that line's look, shared by LogWebhookReceived
+// (plain sequential output) and the interactive listen dashboard.
+func RenderWebhookReceived(event, id string) string {
 	timestamp := time.Now().Format("15:04:05")
-	fmt.Printf("%s  %s %s [%s]\n",
+	return fmt.Sprintf("%s  %s %s [%s]",
 		lipgloss.NewStyle().Foreground(Palette.Gray).Render(timestamp),
 		lipgloss.NewStyle().Foreground(Palette.Green).Bold(true).Render("-->"),
 		lipgloss.NewStyle().Bold(true).Render(event),
@@ -197,7 +208,9 @@ func LogWebhookReceived(event, id string) {
 	)
 }
 
-func LogWebhookForwarded(statusCode int, statusText, event string) {
+// RenderWebhookForwarded renders a single forwarded-webhook line. See
+// RenderWebhookReceived.
+func RenderWebhookForwarded(statusCode int, statusText, event string) string {
 	timestamp := time.Now().Format("15:04:05")
 	codeColor := Palette.Green
 	if statusCode < 200 || statusCode >= 300 {
@@ -207,7 +220,7 @@ func LogWebhookForwarded(statusCode int, statusText, event string) {
 	codeStyle := lipgloss.NewStyle().Foreground(codeColor).Bold(true)
 	bracketStyle := lipgloss.NewStyle().Foreground(Palette.Gray)
 
-	fmt.Printf("%s  %s %s%s%s %s\n",
+	return fmt.Sprintf("%s  %s %s%s%s %s",
 		lipgloss.NewStyle().Foreground(Palette.Gray).Render(timestamp),
 		lipgloss.NewStyle().Foreground(Palette.Green).Bold(true).Render("<--"),
 		bracketStyle.Render("["),
@@ -215,6 +228,14 @@ func LogWebhookForwarded(statusCode int, statusText, event string) {
 		bracketStyle.Render("]"),
 		lipgloss.NewStyle().Bold(true).Render(event),
 	)
+}
+
+func LogWebhookReceived(event, id string) {
+	fmt.Println(RenderWebhookReceived(event, id))
+}
+
+func LogWebhookForwarded(statusCode int, statusText, event string) {
+	fmt.Println(RenderWebhookForwarded(statusCode, statusText, event))
 }
 
 func Select(title string, options map[string]string) (string, error) {
@@ -242,12 +263,15 @@ func Confirm(title string, value *bool) error {
 	return form.Run()
 }
 
-func PrintJSON(data any) {
+// RenderJSON marshals data and returns it syntax-highlighted, matching the
+// coloring PrintJSON writes to stdout. It's the single source of truth for
+// that highlighting, shared with callers (like the interactive listen
+// dashboard) that need the string instead of a direct print.
+func RenderJSON(data any) string {
 	b, err := json.MarshalIndent(data, "", "  ")
 	if err != nil {
 		slog.Debug("failed to marshal JSON for display", "error", err)
-		fmt.Println(data)
-		return
+		return fmt.Sprint(data)
 	}
 
 	str := string(b)
@@ -327,5 +351,9 @@ func PrintJSON(data any) {
 		result.WriteByte(char)
 	}
 
-	fmt.Println(result.String())
+	return result.String()
+}
+
+func PrintJSON(data any) {
+	fmt.Println(RenderJSON(data))
 }
