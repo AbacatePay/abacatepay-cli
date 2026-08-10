@@ -17,7 +17,7 @@ func StartListener(params *StartListenerParams) error {
 		return fmt.Errorf("failed to initialize transaction logger: %w", err)
 	}
 
-	listener := webhook.NewListener(params.Config, params.Client, params.ForwardURL, params.Token, txLogger)
+	listener := webhook.NewListener(params.Config, params.Client, params.ForwardURL, params.Token, params.Env, txLogger)
 
 	// User-facing status goes to stderr (styled) so piped stdout stays clean
 	// webhook-event data; slog.Info here is the file-only diagnostic trail.

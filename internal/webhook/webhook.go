@@ -24,9 +24,10 @@ type Listener struct {
 	client     *resty.Client
 	forwardURL string
 	txLogger   *slog.Logger
+	env        string
 }
 
-func NewListener(cfg *config.Config, client *resty.Client, forwardURL, token string, txLogger *slog.Logger) *Listener {
+func NewListener(cfg *config.Config, client *resty.Client, forwardURL, token, env string, txLogger *slog.Logger) *Listener {
 	return &Listener{
 		BaseListener: BaseListener{
 			Cfg:   cfg,
@@ -35,5 +36,6 @@ func NewListener(cfg *config.Config, client *resty.Client, forwardURL, token str
 		client:     client,
 		forwardURL: forwardURL,
 		txLogger:   txLogger,
+		env:        env,
 	}
 }

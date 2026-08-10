@@ -65,10 +65,18 @@ func (l *Listener) readLoop(ctx context.Context, conn *websocket.Conn) error {
 			Data  struct {
 				ID string `json:"id"`
 			} `json:"data"`
+			DevMode bool `json:"devMode"`
 		}
 
 		if err := json.Unmarshal(message, &raw); err != nil {
 			l.emit(Event{Kind: EventInvalid, Time: time.Now()})
+			continue
+		}
+
+		if l.env == "dev" && !raw.DevMode {
+			continue
+		}
+		if l.env == "prod" && raw.DevMode {
 			continue
 		}
 

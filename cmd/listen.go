@@ -27,10 +27,14 @@ var listenCmd = &cobra.Command{
 	},
 }
 
-var forwardURL string
+var (
+	forwardURL string
+	listenEnv  string
+)
 
 func init() {
 	listenCmd.Flags().StringVar(&forwardURL, "forward-to", "", "Where incoming events should be sent")
+	listenCmd.Flags().StringVar(&listenEnv, "env", "dev", "Which environment events to receive: dev, prod, or all")
 
 	rootCmd.AddCommand(listenCmd)
 }
@@ -64,6 +68,7 @@ func listen(cmd *cobra.Command) error {
 		Store:      deps.Store,
 		Token:      deps.Token,
 		Version:    cmd.Root().Version,
+		Env:        listenEnv,
 	}
 
 	return utils.StartListener(params)
