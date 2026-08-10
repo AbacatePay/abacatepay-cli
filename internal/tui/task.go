@@ -53,7 +53,12 @@ func RunTask(message string, fn func() (TaskResult, error)) error {
 		return runErr
 	}
 
-	return final.(taskModel).err
+	fm, ok := final.(taskModel)
+	if !ok {
+		return fmt.Errorf("unexpected tea model type %T", final)
+	}
+
+	return fm.err
 }
 
 type taskDoneMsg struct {
