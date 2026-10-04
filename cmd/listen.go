@@ -9,7 +9,6 @@ import (
 	"syscall"
 
 	"github.com/AbacatePay/abacatepay-cli/internal/logger"
-	"github.com/AbacatePay/abacatepay-cli/internal/output"
 	"github.com/AbacatePay/abacatepay-cli/internal/tui"
 	"github.com/AbacatePay/abacatepay-cli/internal/utils"
 	"github.com/AbacatePay/abacatepay-cli/internal/webhook"
@@ -49,10 +48,9 @@ func listen(cmd *cobra.Command) error {
 	ctx, cancel := signal.NotifyContext(context.Background(), os.Interrupt, syscall.SIGTERM)
 	defer cancel()
 
-	// The live dashboard needs a real terminal to render into, and only
-	// makes sense for the default text output — piped/scripted/CI use (or
-	// -o json/table) keeps the plain sequential-line behavior.
-	if tui.IsInteractive() && output.GetFormat() == output.FormatText {
+	// The live dashboard needs a real terminal to render into — piped,
+	// scripted or CI use keeps the plain sequential-line behavior.
+	if tui.IsInteractive() {
 		return listenInteractive(ctx, cancel, deps, url)
 	}
 

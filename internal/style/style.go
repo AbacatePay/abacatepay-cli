@@ -6,13 +6,11 @@ import (
 	"io"
 	"log/slog"
 	"os"
-	"sort"
 	"strings"
 	"time"
 
 	"github.com/charmbracelet/huh"
 	"github.com/charmbracelet/lipgloss"
-	"github.com/charmbracelet/lipgloss/table"
 )
 
 type ColorPalette struct {
@@ -66,60 +64,6 @@ func AbacateTheme() *huh.Theme {
 	t.Focused.SelectedOption = t.Focused.SelectedOption.Foreground(Palette.Brown)
 	t.Blurred.Title = t.Blurred.Title.Foreground(Palette.Gray)
 	return t
-}
-
-func PrintTable(headers []string, rows [][]string) {
-	t := table.New().
-		Border(lipgloss.NormalBorder()).
-		BorderStyle(lipgloss.NewStyle().Foreground(Palette.Green)).
-		Headers(headers...).
-		Rows(rows...)
-
-	t.StyleFunc(func(row, col int) lipgloss.Style {
-		if row == 0 {
-			return lipgloss.NewStyle().
-				Bold(true).
-				Align(lipgloss.Center)
-		}
-		return lipgloss.NewStyle().Padding(0, 1)
-	})
-
-	fmt.Println(t.Render())
-}
-
-func ProfileSimpleList(items map[string]string, activeItem string) {
-	keys := make([]string, 0, len(items))
-	for k := range items {
-		keys = append(keys, k)
-	}
-	sort.Strings(keys)
-
-	for _, name := range keys {
-		apiKey := items[name]
-		displayAPIKey := LabelStyle.Render(" (no API key)")
-		if apiKey != "" {
-			shortKey := apiKey
-			if len(shortKey) > 10 {
-				shortKey = shortKey[:10]
-			}
-			displayAPIKey = LabelStyle.Render(fmt.Sprintf(" (%s...)", shortKey))
-		}
-
-		if name != activeItem {
-			fmt.Println(name + displayAPIKey)
-			continue
-		}
-
-		output := lipgloss.NewStyle().
-			Foreground(Palette.Green).
-			Bold(true).
-			Render(name) + displayAPIKey + lipgloss.NewStyle().
-			Foreground(Palette.Green).
-			Bold(true).
-			Render("     🥑")
-		fmt.Println(output)
-	}
-	fmt.Println("")
 }
 
 func SimpleList(items []string, activeItem string) {
