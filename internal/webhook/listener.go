@@ -2,7 +2,6 @@ package webhook
 
 import (
 	"context"
-	"encoding/json"
 	"fmt"
 	"log/slog"
 	"net/http"
@@ -60,19 +59,13 @@ func (l *Listener) readLoop(ctx context.Context, conn *websocket.Conn) error {
 			return fmt.Errorf("failed to read websocket message: %w", err)
 		}
 
-		var raw struct {
-			Event string `json:"event"`
-			Data  struct {
-				ID string `json:"id"`
-			} `json:"data"`
-		}
-
-		if err := json.Unmarshal(message, &raw); err != nil {
+		event, id, err := parseEnvelope(message)
+		if err != nil {
 			l.emit(Event{Kind: EventInvalid, Time: time.Now()})
 			continue
 		}
 
-		meta := webhookMetadata{Event: raw.Event, ID: raw.Data.ID}
+		meta := webhookMetadata{Event: event, ID: id}
 		l.displayWebhook(meta, message)
 
 		g.Go(func() error {
