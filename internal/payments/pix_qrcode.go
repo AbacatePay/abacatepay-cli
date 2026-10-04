@@ -28,7 +28,6 @@ func (s *Service) SimulateTransparentPayment(id string) error {
 				"Status":  result.Data.Status,
 				"DevMode": boolLabel(result.Data.DevMode),
 			},
-			Data: result,
 		}, nil
 	}
 

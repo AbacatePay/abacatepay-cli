@@ -24,23 +24,13 @@ var rootCmd = &cobra.Command{
 	},
 }
 
-var (
-	Local, Verbose bool
-	OutputFormat   string
-)
+var Local, Verbose bool
 
 func Exec() {
 	rootCmd.PersistentFlags().BoolVarP(&Verbose, "verbose", "v", false, "Enable verbose logging")
 	rootCmd.PersistentFlags().BoolVarP(&Local, "local", "l", false, "Deprecated: API environment is determined by the API key")
-	rootCmd.PersistentFlags().StringVarP(&OutputFormat, "output", "o", "text", "Output format: text, json, table")
 
 	rootCmd.PersistentPreRunE = func(cmd *cobra.Command, args []string) error {
-		format, err := output.ParseFormat(OutputFormat)
-		if err != nil {
-			return err
-		}
-		output.SetFormat(format)
-
 		level := slog.LevelInfo
 		if Verbose {
 			level = slog.LevelDebug

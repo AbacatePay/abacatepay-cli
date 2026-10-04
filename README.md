@@ -95,13 +95,9 @@ Ele só funciona para cobranças em `devMode`. Em produção, o pagamento precis
 
 ## Output
 
-A flag global `--output` permite trocar o formato de saída:
+A CLI é 100% TUI: cada comando mostra um spinner enquanto roda e termina com um resumo formatado no próprio terminal. O `listen` abre um painel interativo com o status da conexão e os eventos recebidos.
 
-```bash
-abacatepay payments simulate <charge-id> --output json
-```
-
-Formatos disponíveis: `text`, `json` e `table`.
+Quando a saída não é um terminal (pipe, CI), a CLI imprime as mesmas informações em linhas simples, sem animação.
 
 ## Escopo atual
 
