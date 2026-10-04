@@ -144,12 +144,15 @@ func PrintVerifyError(expected, received string) {
 // (plain sequential output) and the interactive listen dashboard.
 func RenderWebhookReceived(event, id string) string {
 	timestamp := time.Now().Format("15:04:05")
-	return fmt.Sprintf("%s  %s %s [%s]",
+	line := fmt.Sprintf("%s  %s %s",
 		lipgloss.NewStyle().Foreground(Palette.Gray).Render(timestamp),
 		lipgloss.NewStyle().Foreground(Palette.Green).Bold(true).Render("-->"),
 		lipgloss.NewStyle().Bold(true).Render(event),
-		lipgloss.NewStyle().Foreground(Palette.Gray).Render(id),
 	)
+	if id == "" {
+		return line
+	}
+	return line + " " + lipgloss.NewStyle().Foreground(Palette.Gray).Render("["+id+"]")
 }
 
 // RenderWebhookForwarded renders a single forwarded-webhook line. See
