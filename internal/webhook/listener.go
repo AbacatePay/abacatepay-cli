@@ -1,16 +1,13 @@
 package webhook
 
 import (
-	"bytes"
 	"context"
-	"encoding/json"
 	"fmt"
 	"log/slog"
 	"net/http"
 	"time"
 
 	"github.com/AbacatePay/abacatepay-cli/internal/crypto"
-	"github.com/AbacatePay/abacatepay-cli/internal/style"
 	"github.com/AbacatePay/abacatepay-cli/internal/ws"
 
 	"github.com/gorilla/websocket"
@@ -62,19 +59,13 @@ func (l *Listener) readLoop(ctx context.Context, conn *websocket.Conn) error {
 			return fmt.Errorf("failed to read websocket message: %w", err)
 		}
 
-		var raw struct {
-			Event string `json:"event"`
-			Data  struct {
-				ID string `json:"id"`
-			} `json:"data"`
-		}
-
-		if err := json.Unmarshal(message, &raw); err != nil {
-			style.PrintError("Received invalid JSON from WebSocket")
+		event, id, err := parseEnvelope(message)
+		if err != nil {
+			l.emit(Event{Kind: EventInvalid, Time: time.Now()})
 			continue
 		}
 
-		meta := webhookMetadata{Event: raw.Event, ID: raw.Data.ID}
+		meta := webhookMetadata{Event: event, ID: id}
 		l.displayWebhook(meta, message)
 
 		g.Go(func() error {
@@ -85,8 +76,6 @@ func (l *Listener) readLoop(ctx context.Context, conn *websocket.Conn) error {
 }
 
 func (l *Listener) displayWebhook(meta webhookMetadata, rawBody []byte) {
-	style.LogWebhookReceived(meta.Event, meta.ID)
-
 	l.txLogger.Info("webhook_received",
 		"event", meta.Event,
 		"id", meta.ID,
@@ -95,16 +84,13 @@ func (l *Listener) displayWebhook(meta webhookMetadata, rawBody []byte) {
 		"raw_message", string(rawBody),
 	)
 
-	if !l.Cfg.Verbose {
-		return
-	}
-
-	var buf bytes.Buffer
-	if err := json.Indent(&buf, rawBody, "", "  "); err != nil {
-		fmt.Println(string(rawBody))
-		return
-	}
-	fmt.Println(buf.String())
+	l.emit(Event{
+		Kind:    EventReceived,
+		Time:    time.Now(),
+		Name:    meta.Event,
+		ID:      meta.ID,
+		RawJSON: prettyJSON(l.Cfg.Verbose, rawBody),
+	})
 }
 
 func (l *Listener) forward(ctx context.Context, message []byte, event string) error {
@@ -133,7 +119,13 @@ func (l *Listener) forward(ctx context.Context, message []byte, event string) er
 	}
 
 	statusCode := resp.StatusCode()
-	style.LogWebhookForwarded(statusCode, http.StatusText(statusCode), event)
+	l.emit(Event{
+		Kind:       EventForwarded,
+		Time:       time.Now(),
+		Name:       event,
+		StatusCode: statusCode,
+		StatusText: http.StatusText(statusCode),
+	})
 
 	if statusCode < 200 || statusCode >= 300 {
 		l.txLogger.Error("webhook_forward_error",

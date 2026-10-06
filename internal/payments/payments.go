@@ -5,6 +5,7 @@ import (
 	"fmt"
 	"net/http"
 
+	"github.com/AbacatePay/abacatepay-cli/internal/clierr"
 	"github.com/AbacatePay/abacatepay-cli/internal/output"
 	"github.com/AbacatePay/abacatepay-cli/internal/style"
 	"github.com/AbacatePay/abacatepay-cli/internal/types"
@@ -28,7 +29,7 @@ func New(client *resty.Client, baseURL string, verbose bool) *Service {
 
 func (s *Service) executeRequest(req *resty.Request, method, url string, result any) error {
 	if s.Verbose {
-		fmt.Printf("Request: %s %s\n", method, url)
+		fmt.Printf("%s %s %s\n", style.LabelStyle.Render("Request:"), method, style.ValueStyle.Render(url))
 		if body := req.Body; body != nil {
 			if b, ok := body.([]byte); ok {
 				var pretty any
@@ -61,7 +62,7 @@ func (s *Service) executeRequest(req *resty.Request, method, url string, result 
 	}
 
 	if s.Verbose {
-		fmt.Printf("Response: %s\n", resp.Status())
+		fmt.Printf("%s %s\n", style.LabelStyle.Render("Response:"), style.ValueStyle.Render(resp.Status()))
 	}
 
 	if resp.IsError() {
@@ -100,5 +101,5 @@ func (s *Service) handleAPIError(resp *resty.Response) error {
 		output.Error(errorMessage)
 	}
 
-	return fmt.Errorf("API Error: %s", errorMessage)
+	return clierr.MarkDisplayed(fmt.Errorf("API Error: %s", errorMessage))
 }

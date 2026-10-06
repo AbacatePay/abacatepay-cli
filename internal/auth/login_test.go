@@ -114,7 +114,7 @@ func TestPollForToken_Rejected(t *testing.T) {
 	defer server.Close()
 
 	cfg := &config.Config{APIBaseURL: server.URL}
-	if _, err := pollForToken(context.Background(), cfg, newTestClient(), "cli_rejected"); err == nil {
+	if _, err := pollForTokenLoop(context.Background(), cfg, newTestClient(), "cli_rejected"); err == nil {
 		t.Fatal("expected an error for a rejected login request")
 	}
 }
@@ -130,7 +130,7 @@ func TestPollForToken_Expired(t *testing.T) {
 	defer server.Close()
 
 	cfg := &config.Config{APIBaseURL: server.URL}
-	if _, err := pollForToken(context.Background(), cfg, newTestClient(), "cli_expired"); err == nil {
+	if _, err := pollForTokenLoop(context.Background(), cfg, newTestClient(), "cli_expired"); err == nil {
 		t.Fatal("expected an error for an expired login request")
 	}
 }
@@ -142,7 +142,7 @@ func TestPollForToken_NotFound(t *testing.T) {
 	defer server.Close()
 
 	cfg := &config.Config{APIBaseURL: server.URL}
-	if _, err := pollForToken(context.Background(), cfg, newTestClient(), "cli_missing"); err == nil {
+	if _, err := pollForTokenLoop(context.Background(), cfg, newTestClient(), "cli_missing"); err == nil {
 		t.Fatal("expected an error for a not-found login request")
 	}
 }

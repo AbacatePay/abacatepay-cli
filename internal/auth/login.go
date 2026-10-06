@@ -13,6 +13,7 @@ import (
 	"github.com/go-resty/resty/v2"
 
 	"github.com/AbacatePay/abacatepay-cli/internal/config"
+	"github.com/AbacatePay/abacatepay-cli/internal/output"
 	"github.com/AbacatePay/abacatepay-cli/internal/store"
 	"github.com/AbacatePay/abacatepay-cli/internal/style"
 
@@ -38,18 +39,24 @@ func Login(params *LoginParams) error {
 }
 
 func loginWithAPIKey(params *LoginParams) error {
-	user, err := ValidateToken(params.Client, params.Config.APIBaseURL, params.APIKey)
-	if err != nil {
-		return err
-	}
+	return output.RunTask("Validating API key...", func() (output.Result, error) {
+		user, err := ValidateToken(params.Client, params.Config.APIBaseURL, params.APIKey)
+		if err != nil {
+			return output.Result{}, err
+		}
 
-	if err := saveAndActivateProfile(params.Store, params.ProfileName, params.APIKey); err != nil {
-		return err
-	}
+		if err := saveAndActivateProfile(params.Store, params.ProfileName, params.APIKey); err != nil {
+			return output.Result{}, err
+		}
 
-	fmt.Printf("Welcome back, %s\nProfile: %s\n", user.Name, profileName(params.ProfileName))
-
-	return nil
+		return output.Result{
+			Title: "Welcome back",
+			Fields: map[string]string{
+				"User":    user.Name,
+				"Profile": profileName(params.ProfileName),
+			},
+		}, nil
+	})
 }
 
 func loginWithDeviceFlow(params *LoginParams) error {
@@ -82,27 +89,33 @@ func loginWithDeviceFlow(params *LoginParams) error {
 	approvalURL := params.Config.AppBaseURL + "/oauth/cli?id=" + result.Data.PublicID
 
 	if !tryOpenBrowser(params, approvalURL) {
-		fmt.Println("Open the link below to continue authentication:")
-		fmt.Printf("%s\n", approvalURL)
+		style.PrintInfo("Open the link below to continue authentication:")
+		fmt.Println(style.ValueStyle.Render(approvalURL))
 	}
 
-	token, err := pollForToken(params.Context, params.Config, params.Client, result.Data.PublicID)
-	if err != nil {
-		return err
-	}
+	return output.RunTask("Waiting for authorization...", func() (output.Result, error) {
+		token, err := pollForTokenLoop(params.Context, params.Config, params.Client, result.Data.PublicID)
+		if err != nil {
+			return output.Result{}, err
+		}
 
-	user, err := ValidateToken(params.Client, params.Config.APIBaseURL, token)
-	if err != nil {
-		return err
-	}
+		user, err := ValidateToken(params.Client, params.Config.APIBaseURL, token)
+		if err != nil {
+			return output.Result{}, err
+		}
 
-	if err := saveAndActivateProfile(params.Store, params.ProfileName, token); err != nil {
-		return err
-	}
+		if err := saveAndActivateProfile(params.Store, params.ProfileName, token); err != nil {
+			return output.Result{}, err
+		}
 
-	fmt.Printf("Authenticated as %s\nProfile: %s\n", user.Name, profileName(params.ProfileName))
-
-	return nil
+		return output.Result{
+			Title: "Authenticated",
+			Fields: map[string]string{
+				"User":    user.Name,
+				"Profile": profileName(params.ProfileName),
+			},
+		}, nil
+	})
 }
 
 func saveAndActivateProfile(st store.TokenStore, profile, token string) error {
@@ -137,7 +150,7 @@ func tryOpenBrowser(params *LoginParams, verificationURI string) bool {
 		return false
 	}
 
-	fmt.Printf("Opening browser: %s\n", verificationURI)
+	style.PrintInfo("Opening browser: " + verificationURI)
 
 	return true
 }
@@ -178,10 +191,7 @@ func Logout(st store.TokenStore) (string, error) {
 	return activeProfile, nil
 }
 
-func pollForToken(ctx context.Context, cfg *config.Config, client *resty.Client, id string) (string, error) {
-	s := style.Spinner()
-	defer s.Stop()
-
+func pollForTokenLoop(ctx context.Context, cfg *config.Config, client *resty.Client, id string) (string, error) {
 	ticker := time.NewTicker(2 * time.Second)
 
 	defer ticker.Stop()

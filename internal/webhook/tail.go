@@ -1,14 +1,12 @@
 package webhook
 
 import (
-	"bytes"
 	"context"
-	"encoding/json"
 	"fmt"
 	"log/slog"
+	"time"
 
 	"github.com/AbacatePay/abacatepay-cli/internal/config"
-	"github.com/AbacatePay/abacatepay-cli/internal/style"
 	"github.com/AbacatePay/abacatepay-cli/internal/ws"
 
 	"github.com/gorilla/websocket"
@@ -63,33 +61,22 @@ func (t *TailListener) readLoop(ctx context.Context, conn *websocket.Conn) error
 			return fmt.Errorf("failed to read websocket message: %w", err)
 		}
 
-		var raw struct {
-			Event string `json:"event"`
-			Data  struct {
-				ID string `json:"id"`
-			} `json:"data"`
-		}
-
-		if err := json.Unmarshal(message, &raw); err != nil {
-			style.PrintError("Received invalid JSON from WebSocket")
+		event, id, err := parseEnvelope(message)
+		if err != nil {
+			t.emit(Event{Kind: EventInvalid, Time: time.Now()})
 			continue
 		}
 
-		t.displayWebhook(raw.Event, raw.Data.ID, message)
+		t.displayWebhook(event, id, message)
 	}
 }
 
 func (t *TailListener) displayWebhook(event, id string, rawBody []byte) {
-	style.LogWebhookReceived(event, id)
-
-	if !t.Cfg.Verbose {
-		return
-	}
-
-	var buf bytes.Buffer
-	if err := json.Indent(&buf, rawBody, "", "  "); err != nil {
-		fmt.Println(string(rawBody))
-		return
-	}
-	fmt.Println(buf.String())
+	t.emit(Event{
+		Kind:    EventReceived,
+		Time:    time.Now(),
+		Name:    event,
+		ID:      id,
+		RawJSON: prettyJSON(t.Cfg.Verbose, rawBody),
+	})
 }
